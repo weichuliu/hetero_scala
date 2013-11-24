@@ -1,0 +1,7 @@
+scala/sbt jvm memory
+solution: sbt -mem4096
+
+next:
+git it!!
+newman gen_cinfo sorted incorrect?
+murata - muratatri - combiner - merge

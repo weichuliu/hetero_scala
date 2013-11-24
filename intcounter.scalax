@@ -1,0 +1,100 @@
+import scala.collection.mutable.{Map => MMap}
+
+class IntCounter {
+	val cntr:MMap[Int,Int] = MMap()
+	override def toString() = {cntr.toString.replaceFirst("Map", "IntCounter")}
+	def apply(i:Int) = if (cntr.contains(i)) cntr(i) else 0
+	def toMap() = cntr.toMap
+	def items() = cntr.iterator
+	def size = cntr.size
+	def isEmpty = cntr.isEmpty
+	def max: Int = cntr.maxBy(_._2)._1
+
+	def add(i:Int, w:Int=1) {cntr(i) = if (cntr.contains(i)) cntr(i) + w else w}
+	def sub(i:Int, w:Int=1) {
+		cntr(i) -= w
+		assert(cntr(i)>= 0)
+		if (cntr(i)==0) cntr.remove(i)
+	}
+	def addCounter(ic: IntCounter) {
+		for ((i, n) <- ic.items) add(i, n)
+	}
+	def subCounter(ic: IntCounter) {
+		for ((i, n) <- ic.items) sub(i, n)
+
+	}
+	override def equals(other: Any): Boolean = other match {
+		case (other: IntCounter) => this.toMap.equals(other.toMap)
+		case _ => false
+	}
+
+
+
+}
+
+object IntCounter {
+	def apply(l: List[Int]):IntCounter =  {
+		val nc = new IntCounter()
+		for (i <- l) nc.add(i)
+		nc
+	}
+
+	def apply(ic: IntCounter):IntCounter = {
+		val nc = new IntCounter()
+		for ((i, n) <- ic.cntr) nc.add(i, n)
+		nc
+	}
+
+	def apply(l: Int*):IntCounter = IntCounter(l.toList)
+}
+
+
+
+class LstICounter {
+	val cntr:MMap[List[Int],Int] = MMap()
+	override def toString() = {cntr.toString.replaceFirst("Map", "LstICounter")}
+	def apply(i:List[Int]) = if (cntr.contains(i)) cntr(i) else 0
+	def toMap() = cntr.toMap
+	def items() = cntr.iterator
+	def size = cntr.size
+	def isEmpty = cntr.isEmpty
+	def max: List[Int] = cntr.maxBy(_._2)._1
+
+	def add(i:List[Int], w:Int=1) {cntr(i) = if (cntr.contains(i)) cntr(i) + w else w}
+	def sub(i:List[Int], w:Int=1) {
+		cntr(i) -= w
+		assert(cntr(i)>= 0)
+		if (cntr(i)==0) cntr.remove(i)
+	}
+	def addCounter(ic: LstICounter) {
+		for ((i, n) <- ic.items) add(i, n)
+	}
+	def subCounter(ic: LstICounter) {
+		for ((i, n) <- ic.items) sub(i, n)
+
+	}
+	override def equals(other: Any): Boolean = other match {
+		case (other: LstICounter) => this.toMap.equals(other.toMap)
+		case _ => false
+	}
+
+
+
+}
+
+object LstICounter {
+	def apply(l: List[List[Int]]):LstICounter =  {
+		val nc = new LstICounter()
+		for (i <- l) nc.add(i)
+		nc
+	}
+
+	def apply(ic: LstICounter):LstICounter = {
+		val nc = new LstICounter()
+		for ((i, n) <- ic.cntr) nc.add(i, n)
+		nc
+	}
+
+	def apply(l: List[Int]*):LstICounter = LstICounter(l.toList)
+}
+

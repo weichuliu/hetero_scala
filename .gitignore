@@ -1,0 +1,6 @@
+# sbt
+target/
+project/target/
+
+#scala-eclipse-ide
+eclipse/
