@@ -52,6 +52,7 @@ class commonSuite extends FunSuite {
 			(3,0),(3,1),(3,2),(3,3),(3,4)
 			)
 		assert (nodes == nodes_debet)
+		val whatever = gennodeseq(1000, List(1,3,2):_*)
 	}
 
 	test("gennodeseq bypass test") {

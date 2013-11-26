@@ -27,32 +27,10 @@ object Newman {
 		if (moved == true) {
 			val cc = FastUnfolding(gen_E_from_C(E, g))
 			val c = retrieve_c(g.gen_cinfo(), cc)
-			return c
+			return c map {_.sorted}
 		} else {
 			g.gen_cinfo()
 		}
-	}
-
-
-
-
-
-
-	def main(args: Array[String]) {
-		// val g = new Graph()
-		// g.readfile("nets/uni-karate.net")
-		// for (n <- g.nlist) {
-		// 	print(n.toString , ": ")
-		// 	var maxC = g.calc_argmaxC(n.NID)
-		// 	println(maxC.get.CID)
-		// 	println(g.calc_dQ(n.NID, maxC.get))
-		// }
-		// println(g.modularity)
-		val t1 = System.currentTimeMillis
-		val xx = FastUnfolding(readNet("nets/uni-large.net"))
-		printNet(xx)
-		val t2 = System.currentTimeMillis
-		print(t2-t1)
 	}
 }
 
@@ -61,9 +39,8 @@ class Node(val NID:Int) {
 	var neilist:Counter[Node] = Counter()
 	var comm:Community = null
 
-	override def toString() = {
-		"Node " + NID
-	}
+	override def toString(): String = s"Node $NID"
+
 	// override def hashCode() = NID
 
 	def addnei(neinode:Node, weight:Int = 1) {
@@ -75,17 +52,12 @@ class Node(val NID:Int) {
 class Community(var CID:Int, ns:Iterable[Node] = MSet()) {
 	var aii = 0
 	var eii = 0
-	var nodes:MSet[Node] = MSet() ++ ns
-	for (node <- ns) {
-		nodes.add(node)
-		node.comm = this
-	}
+	val nodes:MSet[Node] = MSet() ++ ns
+	nodes foreach {_.comm = this} // point node's comm in self.nodes to self
 
 	def size = nodes.size
 	def isEmpty = nodes.isEmpty
-	override def toString() = {
-		"Comm " + CID
-	}
+	override def toString(): String = s"Comm $CID"
 
 	def update_ae() {
 		aii = 0
@@ -108,7 +80,7 @@ class Graph {
 	var nlist:List[Node] = List()
 	var clist:List[Community] = List()
 
-	def readfile(filename:String) {updateE(readNet(filename))}
+	def readfile(fn:String) {updateE(readNet(fn))}
 
 	def updateE(E:List[List[Int]]) {
 		if (E(0).length == 3) {
@@ -252,7 +224,7 @@ class Graph {
 		// not need only in newman
 		// because the cal_dQ is not moving nodes
 
-		dQlist
+		dQlist.reverse
 	}
 
 	def reach_minimal():Boolean = {
@@ -288,7 +260,7 @@ class Graph {
 
 	def gen_cinfo() = {
 		for (c <- clist) yield {
-			(c.nodes map {_.NID}).toList.sorted
+			(c.nodes map {_.NID}).toList
 		}
 	}
 }

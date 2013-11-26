@@ -10,8 +10,11 @@ class Counter[T] {
 	def size = cntr.size
 	def isEmpty = cntr.isEmpty
 	def keys = cntr.keys
+	def values = cntr.values
 	def max:T = cntr.maxBy(_._2)._1
+	def maxitem:(T,Int) = cntr.maxBy(_._2)
 
+	def clear() {cntr.clear()}
 	def add(i:T, w:Int=1) {cntr(i) = if (cntr.contains(i)) cntr(i) + w else w}
 	def sub(i:T, w:Int=1) {
 		cntr(i) -= w
