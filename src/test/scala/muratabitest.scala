@@ -29,11 +29,11 @@ class muratabiSuite extends FunSuite {
 
 	test("FastUnfolding") {
 		val t1 = System.currentTimeMillis
-		val xx = FastUnfolding(readNet("nets/bi-digg.net"))
+		val xx = FastUnfolding(readNet("nets/bi-sw.net"))
 		val t2 = System.currentTimeMillis
 
 		val g = new Graph()
-		g.readfile("nets/bi-digg.net")
+		g.readfile("nets/bi-sw.net")
 		g.updateC(xx)
 		println(s"modularity is ${g.modularity}")
 		println("time used: " + (t2-t1).toString)
