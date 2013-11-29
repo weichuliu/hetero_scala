@@ -61,6 +61,12 @@ class commonSuite extends FunSuite {
 		assert (p2() == (-1, -1))
 	}
 
+	test("lrnr") {
+		val (lr, nr) = lrnr("nets/.meta")
+		assert (lr == List(187, 255, 408, 425))
+		assert (nr == List(60, 60, 50))
+	}
+
 	// test("gennodeseq reset test") {
 	// 	val (p, r) = gennodeseq(bypass = 10, 50, 5)
 	// 	p()

@@ -2,6 +2,7 @@ package newman
 
 import common.Common._
 import common.Counter
+import common.KPartiteGraph
 import scala.collection.mutable.{Set => MSet}
 
 object Newman {
@@ -73,7 +74,7 @@ class Community(var CID:Int, ns:Iterable[Node] = MSet()) {
 	}
 }
 
-class Graph {
+class Graph extends KPartiteGraph {
 	var E:List[List[Int]] = List()
 	var M = 0
 	var N = 0
@@ -131,7 +132,9 @@ class Graph {
 		clist foreach {_.update_ae}
 	}
 
-	def modularity = {
+	def uC(clist:List[List[List[Int]]]) = updateC(clist(0))
+
+	def modularity:Double = {
 		val aiisum = clist.view.map({_.aii}).sum
 		val squareeiisum = clist.view.map({c => c.eii.toLong * c.eii.toLong}).sum
 		assert (squareeiisum >= 0)
@@ -161,7 +164,8 @@ class Graph {
         dst_c.eii += node.degree
 	}
 
-	def mv_nd(nid:Int, dst_cid:Int) {
+	def mv_nd(layer:Int, nid:Int, dst_cid:Int) {
+		// just throw layer away.
 		move_node(nlist(nid), clist(dst_cid))
 	}
 
@@ -203,7 +207,7 @@ class Graph {
 		(square(src_ne) - square(src_oe) + square(dst_ne) - square(dst_oe)).toDouble / square(2 * M)
 	}
 
-	def all_pos_dQ(layer:Int, nid:Int) = {
+	def all_pos_dQ(layer:Int, nid:Int):List[(Community, Double)] = {
 		// in newman, layer not used
 		val node = nlist(nid)
 		val src_c = node.comm
@@ -262,5 +266,17 @@ class Graph {
 		for (c <- clist) yield {
 			(c.nodes map {_.NID}).toList
 		}
+	}
+
+	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] = {
+		all_pos_dQ(layer, nid) map {
+			// no layer in newman.Community, always 0
+			case (c:Community, dQ:Double) => ((0, c.CID), dQ)
+			case _ => assert(false); ((0, 0), 0.0)
+		}
+	}
+
+	def calcdq(layer:Int, nid:Int, dst_cid:Int):Double = {
+		calc_dQ(nid, clist(dst_cid))
 	}
 }

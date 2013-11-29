@@ -1,7 +1,25 @@
-scala/sbt jvm memory
-solution: sbt -mem4096
-
-next:
+scala/sbt jvm memory => solution: sbt -mem 4096
 git it!!
 newman gen_cinfo sorted incorrect?
-murata - muratatri - combiner - merge
+murata
+muratatri
+trait KPartiteGraph writed
+	func modularity
+	func allposdq => c's local layer, local CID
+	func mv_nd(layer, nid, cid) # newman compliant
+	func calc_dq
+	func updateE updateC
+
+
+
+next:
+murata optimize calc dQ by using local modularity
+
+combiner: trait not test yet
+complete the code
+make a entry point to run with args
+combiner - merge
+
+
+
+

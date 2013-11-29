@@ -2,6 +2,7 @@ package muratabi
 
 import common.Common._
 import common.Counter
+import common.KPartiteGraph
 import scala.collection.mutable.{Set => MSet}
 
 object MurataBi {
@@ -93,7 +94,7 @@ class Community(var CID:Int, val layer:Int, ns:Iterable[Node] = MSet()) {
 	}
 }
 
-class Graph {
+class Graph extends KPartiteGraph {
 	var E:List[List[Int]] = List()
 	var M = 0
 	var NN:List[Int] = List()
@@ -149,6 +150,8 @@ class Graph {
 		// after all communities gen account and degree, gen partner
 		clist foreach {_ foreach {c => c.gen_partner()}}
 	}
+
+	def uC(clist:List[List[List[Int]]]) = updateC(clist)
 
 	def MurataQ():Double = {
 		var elm = 0L
@@ -210,8 +213,8 @@ class Graph {
 		val dst_c = clist(layer)(dst_cid)
 
 		val oriQ = modularity()
-		val newQ = modularity()
 		move_node(node, dst_c)
+		val newQ = modularity()
 		if (moveback)
 			move_node(node, src_c)
 
@@ -237,7 +240,7 @@ class Graph {
 		dQ_list.reverse
 	}
 
-	def all_pos_dQ(layer:Int, nid:Int) = {
+	def all_pos_dQ(layer:Int, nid:Int):List[(Community, Double)] = {
 		val node = nlist(layer)(nid)
 		val src_c = node.comm
 
@@ -282,5 +285,16 @@ class Graph {
 			}
 		}
 		moved
+	}
+
+	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] = {
+		all_pos_dQ(layer, nid) map {
+			case (c:Community, dQ:Double) => ((c.layer, c.CID), dQ)
+			case _ => assert(false); ((0, 0), 0.0)
+		}
+	}
+
+	def calcdq(layer:Int, nid:Int, dst_cid:Int):Double = {
+		calc_dQ(layer, nid, dst_cid)
 	}
 }

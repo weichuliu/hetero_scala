@@ -1,5 +1,6 @@
 import muratabi.MurataBi._
 import muratabi.Graph
+import common.KPartiteGraph
 import common.Common.{readNet, printNet, saveNet}
 import org.scalatest.FunSuite
 
@@ -41,6 +42,22 @@ class muratabiSuite extends FunSuite {
 		saveNet(xx(1), "nets/result_by")
 	}
 
+	test ("trait test") {
+		val pg:KPartiteGraph = new Graph
+		val E = readNet("nets/bi-sw.net")
+		pg.updateE(E)
+		assert (pg.modularity == 0.13539957076126752)
+		assert (pg.candidateID_pairs(0, 14).toSet == Set(
+			((0, 10) -> 0.006880444388334822),
+			((0, 11) -> 0.002588057063502097),
+			((0, 16) -> 0.004355510667844981),
+			((0, 12) -> 0.0018305769473551115),
+			((0, 13) -> 0.007259184446408273),
+			((0, 17) -> 0.004355510667844981),
+			((0, 9) -> 0.004986744097967427)
+			))
 
-
+		assert (pg.calcdq(0, 5, 3) == 0.0029667971215755484)
+		assert (pg.calcdq(1, 3, 6) == 0.003913647266759246)
+	}
 }

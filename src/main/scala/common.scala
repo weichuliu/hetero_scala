@@ -29,6 +29,26 @@ object Common {
 		println(netStr)
 	}
 
+	def lrnr(metafn:String):(List[Int], List[Int]) = {
+		def metaToList(s:String) = {
+			val l = s.indexOf("[")
+			val r = s.indexOf("]")
+			s.slice(l+1, r).split(", ").map{_.toInt}.toList
+		}
+		val f = fromFile(metafn)
+		val contents = f.getLines.toList
+		f.close()
+
+		val lrstr = contents(0)
+		val nrstr = contents(1)
+		assert (lrstr.startsWith("lr = "))
+		assert (nrstr.startsWith("nr = "))
+
+		return (metaToList(lrstr), metaToList(nrstr))
+
+
+	}
+
 	// def readDict >> maybe use json lib to do it
 
 	// def writeDict >> maybe use json lib to do it
@@ -100,4 +120,13 @@ object Common {
 		}
 		(picknode _, resetnodeseq _)
 	}
+}
+
+trait KPartiteGraph {
+	def updateE(E:List[List[Int]])
+	def uC(CLIST:List[List[List[Int]]])
+	def modularity:Double
+	def mv_nd(layer:Int, nid:Int, cid:Int)
+	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] // layer, cid, dq
+	def calcdq(layer:Int, nid:Int, dst_cid:Int):Double
 }
