@@ -109,7 +109,7 @@ class Graph extends KPartiteGraph {
 	def updateE(E:List[List[Int]]) {
 		this.E = E
 		M = E.length
-		if (M > 2097151) {println("cube M will overflow"); assert (false)}
+		if (M > 2097151) {System.err.println("cube M will overflow"); assert (false)}
 		NN = List(0, 1, 2) map { layer:Int =>
 			// for layer in (0, 1, 2) get the max of layer
 			E.view.maxBy{_(layer)}.apply(layer) + 1

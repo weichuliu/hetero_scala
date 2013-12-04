@@ -10,7 +10,7 @@ import muratatri.{Graph => TGraph}
 
 object Combiner {
 	def subgraph_typefinder(E:List[List[Int]], nr:List[Int]):(String, List[Int]) = {
-		if (E.length == 0) {println("empty subgraph E"); assert(false)}
+		if (E.length == 0) {System.err.println("empty subgraph E"); assert(false)}
 
 		val node_to_layer = belongJudger(nr)
 		val e = E(0)

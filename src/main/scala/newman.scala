@@ -85,7 +85,7 @@ class Graph extends KPartiteGraph {
 
 	def updateE(E:List[List[Int]]) {
 		if (E(0).length == 3) {
-			println("weighted E, init Newman as weighted")
+			// println("weighted E, init Newman as weighted")
 			updateWE(E)
 		} else {
 			this.E = E
