@@ -21,13 +21,27 @@ class Counter[T] {
 		assert(cntr(i)>= 0)
 		if (cntr(i)==0) cntr.remove(i)
 	}
+
 	def addCounter(ic: Counter[T]) {
 		for ((i, n) <- ic.items) add(i, n)
 	}
+
 	def subCounter(ic: Counter[T]) {
 		for ((i, n) <- ic.items) sub(i, n)
-
 	}
+
+	def + (ic: Counter[T]):Counter[T] = {
+		val nc = Counter[T](this)
+		nc.addCounter(ic)
+		nc
+	}
+
+	def - (ic: Counter[T]):Counter[T] = {
+		val nc = Counter[T](this)
+		nc.subCounter(ic)
+		nc
+	}
+
 	override def equals(other: Any): Boolean = other match {
 		case (other: Counter[T]) => this.toMap.equals(other.toMap)
 		case _ => false
@@ -46,6 +60,12 @@ object Counter {
 	def apply[T](ic: Counter[T]):Counter[T] = {
 		val nc = new Counter[T]()
 		for ((i, n) <- ic.cntr) nc.add(i, n)
+		nc
+	}
+
+	def apply[T](it: Iterator[(T, Int)]) = {
+		val nc = new Counter[T]()
+		for ((i, n) <- it) nc.add(i, n)
 		nc
 	}
 

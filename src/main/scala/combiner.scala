@@ -94,7 +94,7 @@ class HGraph(E:List[List[Int]], val lr:List[Int], val nr:List[Int]) {
 	val c_list = List.range(0, nr.sum) map {i => MSet(i)}
 
 	def reach_minimal():Boolean = {
-		val (node_picker, node_resetter) = gennodeseq(1000, lr.sum)
+		val (node_picker, node_resetter) = gennodeseq(1000, nr.sum)
 		var moved = false
 		var stopflag = false
 

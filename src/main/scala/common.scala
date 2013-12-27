@@ -1,8 +1,10 @@
 package common
 
 import scala.io.Source.fromFile
+import scala.math.log
 import java.io.{File, PrintWriter}
 import scala.util.Random.{shuffle, nextInt => randint}
+import collection.mutable.{Seq=>MSeq}
 object Common {
 	// def flatten_list(lst): scala builtin flatten
 	def readNet(fn: String) = {
@@ -120,6 +122,55 @@ object Common {
 		}
 		(picknode _, resetnodeseq _)
 	}
+
+	def nCrln(n:Int, r:Int):Double = {
+		assert (r >= 0 && r <= n)
+		if (r == 1) {
+			log(n)
+		} else {
+			gammaln(n+1) - gammaln(r+1) - gammaln(n-r+1)
+		}
+	}
+
+	def log2(n:Int):Double = log(n) / log(2)
+
+	def gammaln(x:Int):Double = {
+		// this gammaln only accept int >= 0
+		// implementation refers to :
+		// https://pypi.python.org/pypi/Combinatorics
+		// https://github.com/ghewgill/picomath/blob/master/scala/src/Gamma.scala
+		// http://www.johndcook.com/stand_alone_code.html
+		assert (x >= 1)
+		if (x < 12) {
+			// gammaln(0) = inf, gammaln(1) = gammaln(2) = log(1)
+			log(List(0, 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880,
+				3628800)(x))
+		} else {
+			val _x = x.toDouble
+			val c = List(1.0/12.0, -1.0/360.0,
+				1.0/1260.0, -1.0/1680.0,
+				1.0/1188.0, -691.0/360360.0,
+				1.0/156.0,-3617.0/122400.0)
+			val z = 1.0/(_x*_x)
+			// replace with reduceRight
+			// var s = c(7)
+			// for (i <- List(6,5,4,3,2,1,0)) {
+			// 	s *= z
+			// 	s += c(i)
+			// }
+			val s = c.reduceRight{_ + _ * z} // replacement of last snippet
+			val series = s/_x
+			val halfLogTwoPi = 0.91893853320467274178032973640562
+			val logGamma = (_x - 0.5)*log(_x) - _x + halfLogTwoPi + series
+			logGamma
+		}
+	}
+
+	def orderOFVector(A:Vector[Int], B:Vector[Int]):Boolean = {
+		if (A.length == 1 || A(0) != B(0)) A(0) < B(0)
+		else orderOFVector(A.slice(1, A.length), B.slice(1, B.length)) 
+	}
+
 }
 
 trait KPartiteGraph {
@@ -129,4 +180,15 @@ trait KPartiteGraph {
 	def mv_nd(layer:Int, nid:Int, cid:Int)
 	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] // layer, cid, dq
 	def calcdq(layer:Int, nid:Int, dst_cid:Int):Double
+}
+
+trait KFinderGraph {
+	def updateE(E:Seq[Seq[Int]])
+	def uE_nsizes(E:Seq[Seq[Int]], nsizes:Seq[Seq[Int]])
+	def uC(clists:Vector[Vector[Vector[Int]]])
+	def alldMLXY(layer:Int, nid:Int):MSeq[Double]
+	def mv_nd(layer:Int, nid:Int, dst_cid:Int)
+	def k:Int
+	def _M:Double
+	def _LXY:Double
 }
