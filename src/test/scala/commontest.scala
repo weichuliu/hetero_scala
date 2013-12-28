@@ -1,4 +1,5 @@
 import common.Common._
+import common.HFCommon._
 import org.scalatest.FunSuite
 import scala.io.Source.fromFile
 import java.io.{File, PrintWriter}
@@ -73,6 +74,36 @@ class commonSuite extends FunSuite {
 	// 	r()
 	// 	for (i <- 1 to 9) {assert(p()._1 != -1)}
 	// 	assert (p() == (-1, -1))
+
+	// }
+
+	// test("gammaln") {
+	// 	import scala.math.abs
+	// 	val f = fromFile("nets/gammaln.txt")
+	// 	val gammaln_debet = f.getLines.toArray.map{_.toDouble}
+	// 	f.close
+
+	// 	for (i <- 1 until 1000000) {
+	// 		val d = abs(gammaln(i) - gammaln_debet(i))
+	// 		assert(d <= 2E-9)
+	// 	}
+	// }
+
+	// test ("nCrln") {
+	// 	import scala.math.{log, BigInt, E, pow, abs}
+	// 	def fact(n:BigInt):BigInt = {if (n == 1 || n == 0) 1 else (n * fact(n-1))}
+	// 	def nCr(n:Int, r:Int) = fact(n) / (fact(r) * fact(n-r))
+
+	// 	val x = (for {n <- 1 to 30
+	// 				r <- 1 to n} yield {
+	// 				(pow(E, nCrln(n,r)) - nCr(n,r).toDouble)
+	// 			})maxBy{abs(_)}
+	// 	println(x)
+	// 	println(nCrln(1000, 500))
+	// 	val t1 = System.currentTimeMillis
+	// 	for (n <- 0 to 10000000) {val temp = nCrln(n, n / 2)}
+	// 	val t2 = System.currentTimeMillis - t1
+	// 	println(t2)
 
 	// }
 

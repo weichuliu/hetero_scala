@@ -2,11 +2,9 @@ package hfinder
 
 import common.Common._
 import common.Counter
-import common.KFinderGraph
+import common.HFCommon._
 import ufinder.{Graph => UGraph}
 import kfinder.{Graph => KGraph}
-import kfinder.KFinder.{_rannseq, retr_c}
-import combiner.Combiner
 import math.log
 import System.err.{println => perr}
 import collection.mutable.{Seq=>MSeq, Map=>MMap, ListBuffer}
@@ -22,12 +20,14 @@ object HFinder {
 		val hg = new HGraph(E, lr, nr)
 		var l2loop = -1
 		while (l2loop != 1) {
+			// println(s"hg.HQ:${hg.HQ} => ......")
 			hg.minimizeQ()
-			println(hg.HQ)
+			// println(hg.HQ)
+			// println("merge")
 			val clist = hg.c_result.map{_.toList}.toList
-			val newnr = Combiner.gen_nr_from_c(hg.nr.toList, clist)
+			val newnr = gen_nr_from_c(hg.nr.toList, clist)
 			val newlr = hg.lr
-			val newE = Combiner.gen_E_from_C(hg.E_list.flatten.map{_.toList}, clist)
+			val newE = gen_E_from_C(hg.E_list.flatten.map{_.toList}, clist)
 			val fs = hg.nsizes.flatten
 			val newnsize = clist.map{_.map{fs(_)}.sum}
 			val newnsizes = rangeToPair(newnr).map{
@@ -36,11 +36,12 @@ object HFinder {
 			}
 			val hg2 = new HGraph(newE, newlr, 
 				newnr, newnsizes.map{x=>MSeq(x:_*)})
-			println(hg2.HQ)
+			// println("hg2.HQ:${hg2.HQ} => ......")
 			l2loop = hg2.minimizeQ()
-			println(hg2.HQ)
+			// println(hg2.HQ)
+			// println("Unpack")
 			val retc = retr_c(hg.c_result, hg2.c_result)
-			val old_cr = Combiner.gen_nr_from_c(hg.nr.toList, retc.map{_.toList}.toList)
+			val old_cr = gen_nr_from_c(hg.nr.toList, retc.map{_.toList}.toList)
 			val n_empty_c = for ((x, y) <- (hg.nr, old_cr).zipped) yield (x - y)
 
 			val retc_l = (n_empty_c, rangeToPair(old_cr)).zipped.map {
@@ -50,7 +51,7 @@ object HFinder {
 			val retc_flat = retc_l.flatten
 			hg.updateC(retc_flat.toVector)
 		}
-		hg.c_list.filter{!_.isEmpty}
+		hg.c_list.filter{!_.isEmpty}.map{_.toList}.toList
 	}
 
 	def fnLouvain(folder:String) = {
@@ -123,12 +124,12 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 	if (nsizes.isEmpty) {
 		rangeToPair(_lr.toList).map{case List(base, upper) =>
 			preprocessE(E.slice(base, upper), 
-						Combiner.subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni")
+						subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni")
 		}
 	} else {
 		rangeToPair(_lr.toList).map{case List(base, upper) =>
 			checkE(E.slice(base, upper),
-					Combiner.subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni",
+					subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni",
 					nsizes)
 		}
 	}
@@ -229,7 +230,7 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 
 class SubGraph(E:Vector[Vector[Int]], nr:List[Int], nsizes:Seq[MSeq[Int]] = Vector()) {
 	val global_E = E
-	val (gtype, layerinfo) = Combiner.subgraph_typefinder(E.map{_.toList}.toList, nr)
+	val (gtype, layerinfo) = subgraph_typefinder(E.map{_.toList}.toList, nr)
 	assert (Set("uni","bi","tri").contains(gtype))
 
 	// init a corresponding graph

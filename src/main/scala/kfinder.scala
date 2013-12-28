@@ -2,44 +2,13 @@ package kfinder
 
 import common.Common._
 import common.Counter
-import common.KFinderGraph
+import common.HFCommon._
 import math.log
 import scala.util.Random.{shuffle, nextInt => randint}
 import scala.collection.mutable.{Set => MSet, Seq => MSeq, ListBuffer}
 import scala.collection.{Seq => CSeq}
 
 object KFinder {
-	def _rannseq(ns:Int*) = {
-		val nseq = shuffle(for ((n, layer) <- ns.zipWithIndex;
-						i <- (0 until n)) yield (layer, i))
-		nseq.toIterator
-	}
-
-	def retr_c(lc:Seq[Seq[Int]], cofc:Seq[Seq[Int]]) = {
-		// "single layer version"
-		cofc map {c => c.map{lc(_)}.flatten}
-	}
-	
-
-	def label_to_clist(label:Seq[Int]) = {
-		val cnum:Int = label.max + 1
-		val clist = Vector.range(0, cnum).map{i => ListBuffer[Int]()}
-		for ((cid, nid) <- label.zipWithIndex) {
-			clist(cid).append(nid)
-		}
-		clist.map{_.toVector}
-	}
-
-	def clist_to_label(clist:Seq[Seq[Int]]):MSeq[Int] = {
-		val nnum = clist.flatten.max + 1
-		val label:MSeq[Int] = Array.fill(nnum)(-1)
-		for ((c, cid) <- clist.zipWithIndex; nid <- c) {
-			label(nid) = cid
-		}
-		assert(!label.contains(-1))
-		label
-	}
-
 	def E_to_CE(E:Seq[Seq[Int]], labels:(Int, Int)=>Int) = 
 		E.map{edge_to_ce(_, labels)}.toVector
 
@@ -71,22 +40,22 @@ object KFinder {
 		val g2 = new Graph()
 		var continue = true
 		while (continue) {
-			println("g minimize Q")
+			// println("g minimize Q")
 			g.minimizeQ()
-			println(s"g.Q = ${g.Q}")
+			// println(s"g.Q = ${g.Q}")
 			g2.updateE_with_nsizes(g.gen_CE, g.csizes)
-			println("g2.minimize Q")
+			// println("g2.minimize Q")
 			g2.minimizeQ()
-			println(s"g2.Q = ${g2.Q}")
+			// println(s"g2.Q = ${g2.Q}")
 			if (g.Q == g2.Q) {
-				println("over")
+				// println("over")
 				continue = false
 			}
 			val rc = (g.gen_clists, g2.gen_clists).zipped.map{retr_c(_,_)}
 			g.updateC(rc.map{_.map{_.toVector}.toVector})
-			println("-return-")
+			// println("-return-")
 		}
-		g
+		g.gen_clists
 	}
 
 	def fnLouvain(fn:String) = {

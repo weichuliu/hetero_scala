@@ -2,11 +2,10 @@ package ufinder
 
 import common.Common._
 import common.Counter
-import common.KFinderGraph
+import common.HFCommon._
 import math.log
 import scala.collection.mutable.{Set => MSet, Seq => MSeq, ListBuffer}
 import scala.collection.{Seq => CSeq}
-import kfinder.KFinder.{_rannseq, retr_c, label_to_clist, clist_to_label}
 
 object UFinder {
 	def E_to_CE(E:Seq[Seq[Int]], labels:(Int)=>Int) = 
@@ -50,20 +49,20 @@ object UFinder {
 		val g2 = new Graph()
 		var continue = true
 		while (continue) {
-			println("g minimize Q")
+			// println("g minimize Q")
 			g.minimizeQ()
-			println(s"g.Q = ${g.Q}")
+			// println(s"g.Q = ${g.Q}")
 			g2.updateE_with_nsize(g.gen_CE, g.csize)
-			println("g2.minimize Q")
+			// println("g2.minimize Q")
 			g2.minimizeQ()
-			println(s"g2.Q = ${g2.Q}")
+			// println(s"g2.Q = ${g2.Q}")
 			if (g.Q == g2.Q) {
-				println("over")
+				// println("over")
 				continue = false
 			}
 			val rc = retr_c(g.gen_clist, g2.gen_clist)
 			g.updateC(rc.map{_.toVector}.toVector)
-			println("-return-")
+			// println("-return-")
 		}
 		g
 	}

@@ -4,3 +4,6 @@ project/target/
 
 #scala-eclipse-ide
 eclipse/
+
+#nets/result
+nets/result*

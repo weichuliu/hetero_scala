@@ -64,7 +64,7 @@ object Combiner {
 
 	def FastUnfolding(E:List[List[Int]], lr:List[Int], nr:List[Int]):List[List[Int]] = {
 		val g = new HGraph(E, lr, nr)
-		val moved = g.reach_minimal()
+		val moved = g.minimizeQ()
 		if (moved == true) {
 			val new_nr = gen_nr_from_c(nr, g.c_result)
 			val new_E = gen_E_from_C(E, g.c_result)
@@ -120,8 +120,34 @@ class HGraph(E:List[List[Int]], val lr:List[Int], val nr:List[Int]) {
 				}
 			}
 		}
-
 		moved
+	}
+
+	def minimizeQ():Boolean = {
+		var looped = 0
+		var moved = -1
+		while (moved != 0) {
+			looped += 1
+			var node_picker = _rannseq(nr.sum)
+			moved = 0
+			for ((layer, nid) <- node_picker) {
+				val argmax_c = calc_amc(nid)
+				argmax_c match {
+					case Some(cid:Int) => {
+						moved += 1
+						move_node(nid, cid)
+					}
+					case None => {}
+				}
+
+			}
+			if (moved == 0) {
+				c_result = c_list.filter{!_.isEmpty}.map{_.toList.sorted}
+			} else {
+				node_picker = _rannseq(nr.sum)
+			}
+		}
+		(looped != 1)
 	}
 
 	// calculate argmax cid of g_nid
