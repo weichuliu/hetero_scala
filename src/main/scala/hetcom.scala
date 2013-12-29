@@ -17,7 +17,7 @@ object hetcom {
 	def main(args: Array[String]): Unit = {
 		if (args.length != 3) {
 			perr(errinfo)
-		} else if (!List("cm", "hg").contains(args(0))) {
+		} else if (!List("cm", "hf").contains(args(0))) {
 			perr(errinfo)
 		} else {
 			def stol(s:String):List[Int] = s.split(" ").map{_.toInt}.toList

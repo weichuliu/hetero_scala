@@ -190,7 +190,8 @@ class Graph extends KFinderGraph {
 		val src_tobe_empty = (csizes(layer)(src_cid) == nsz)
 		val dst_was_empty = if (src_cid == dst_cid) src_tobe_empty else csizes(layer)(dst_cid) == 0
 		(src_tobe_empty, dst_was_empty) match {
-			case (true, true) => (ntotalsize(layer) * (log(cnums(layer)) - log(cnums(layer) - 1)), cnums.product / cnums(layer) * log(M + 1))
+			case (true, true) => if (cnums(layer) == 1) (0.0, cnums.product / cnums(layer) * log(M + 1))
+								else (ntotalsize(layer) * (log(cnums(layer)) - log(cnums(layer) - 1)), cnums.product / cnums(layer) * log(M + 1))
 			case (false, true) => (ntotalsize(layer) * (log(cnums(layer)) + 1) - log(cnums(layer)), cnums.product / cnums(layer) * log(M + 1))
 			case _ => (0, 0)
 		}
@@ -228,8 +229,6 @@ class Graph extends KFinderGraph {
 	}
 
 	def alldMLXY(layer:Int, nid:Int) = {
-		if (cnums(layer) == 1)
-			MSeq.fill(csizes(layer).length)(0.0)
 		else {
 				val src_cid = nlabels(layer)(nid)
 				val dqsrc = quick_dMLXY(layer, nid, src_cid)
