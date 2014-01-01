@@ -1,7 +1,7 @@
 import common.Common._
 import common.HFCommon._
 import org.scalatest.FunSuite
-import scala.io.Source.fromFile
+import io.Source.fromFile
 import java.io.{File, PrintWriter}
 
 class commonSuite extends FunSuite {
@@ -29,10 +29,10 @@ class commonSuite extends FunSuite {
 	}
 
 	test("rangeToPair and belongJudger") {
-		val l = List (5,10,15,20)
+		val l = Seq (5,10,15,20)
 		val p = rangeToPair(l)
-		val p_debet = List(
-			List(0,5), List(5,15), List(15,30), List(30,50)
+		val p_debet = Seq(
+			Seq(0,5), Seq(5,15), Seq(15,30), Seq(30,50)
 			)
 		assert (p == p_debet)
 
@@ -45,15 +45,15 @@ class commonSuite extends FunSuite {
 
 	test("gennodeseq layer and localnid test") {
 		val (p,r) = gennodeseq(bypass = 1000, 5,5,5,5)
-		val nodes = (List.range(0, 20) map {i => p()}).sorted
-		val nodes_debet = List(
+		val nodes = (Seq.range(0, 20) map {i => p()}).sorted
+		val nodes_debet = Seq(
 			(0,0),(0,1),(0,2),(0,3),(0,4),
 			(1,0),(1,1),(1,2),(1,3),(1,4),
 			(2,0),(2,1),(2,2),(2,3),(2,4),
 			(3,0),(3,1),(3,2),(3,3),(3,4)
 			)
 		assert (nodes == nodes_debet)
-		val whatever = gennodeseq(1000, List(1,3,2):_*)
+		val whatever = gennodeseq(1000, Seq(1,3,2):_*)
 	}
 
 	test("gennodeseq bypass test") {
@@ -64,8 +64,24 @@ class commonSuite extends FunSuite {
 
 	test("lrnr") {
 		val (lr, nr) = lrnr("nets/.meta")
-		assert (lr == List(187, 255, 408, 425))
-		assert (nr == List(60, 60, 50))
+		assert (lr == Seq(187, 255, 408, 425))
+		assert (nr == Seq(60, 60, 50))
+	}
+
+	test("subgraph_typefinder") {
+		val E = readNet("nets/hetero.net")
+		val lr = Seq(187, 255, 408, 425)
+		val nr = Seq(60, 60, 50)
+
+		val E_list = rangeToPair(lr) map {
+			case Seq(base, upper) => E.slice(base, upper)
+			case _ => {assert(false);Seq()}
+		}
+
+		assert (
+			E_list.map(subgraph_typefinder(_, nr)) == 
+			("uni", Seq(0, 0)) :: ("bi", Seq(0, 1)) :: ("uni", Seq(1, 1)) :: ("tri", Seq(0, 1, 2)) :: Nil
+			)
 	}
 
 	// test("gennodeseq reset test") {
@@ -78,7 +94,7 @@ class commonSuite extends FunSuite {
 	// }
 
 	// test("gammaln") {
-	// 	import scala.math.abs
+	// 	import math.abs
 	// 	val f = fromFile("nets/gammaln.txt")
 	// 	val gammaln_debet = f.getLines.toArray.map{_.toDouble}
 	// 	f.close
@@ -90,7 +106,7 @@ class commonSuite extends FunSuite {
 	// }
 
 	// test ("nCrln") {
-	// 	import scala.math.{log, BigInt, E, pow, abs}
+	// 	import math.{log, BigInt, E, pow, abs}
 	// 	def fact(n:BigInt):BigInt = {if (n == 1 || n == 0) 1 else (n * fact(n-1))}
 	// 	def nCr(n:Int, r:Int) = fact(n) / (fact(r) * fact(n-r))
 

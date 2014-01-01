@@ -6,21 +6,21 @@ import org.scalatest.FunSuite
 
 class muratabiSuite extends FunSuite {
 	test("retrieve_c test") {
-		val Cxy1 = List(
-			List(List(4, 6), List(12, 14), List(26, 28), List(38, 30)),
-			List(List(3, 5), List(13, 17), List(25, 29), List(37, 31)))
-		val CCxy1 = List(
-			List(List(0, 1), List(2, 3)), 
-			List(List(0, 2), List(1, 3))			)
+		val Cxy1 = Seq(
+			Seq(Seq(4, 6), Seq(12, 14), Seq(26, 28), Seq(38, 30)),
+			Seq(Seq(3, 5), Seq(13, 17), Seq(25, 29), Seq(37, 31)))
+		val CCxy1 = Seq(
+			Seq(Seq(0, 1), Seq(2, 3)), 
+			Seq(Seq(0, 2), Seq(1, 3))			)
 		val rc = retrieve_c(Cxy1, CCxy1)
-		val rc_debet = List(List(List(4, 6, 12, 14), List(26, 28, 38, 30)), 
-						List(List(3, 5, 25, 29), List(13, 17, 37, 31)))
+		val rc_debet = Seq(Seq(Seq(4, 6, 12, 14), Seq(26, 28, 38, 30)), 
+						Seq(Seq(3, 5, 25, 29), Seq(13, 17, 37, 31)))
 		assert (rc == rc_debet)
 
-		val Cxy2 = List(List(100), List(200)) :: Cxy1
-		val CCxy2 = List(List(0, 1)) :: CCxy1
+		val Cxy2 = Seq(Seq(Seq(100), Seq(200))) ++ Cxy1
+		val CCxy2 = Seq(Seq(Seq(0, 1))) ++ CCxy1
 		val rc2 = retrieve_c(Cxy2, CCxy2)
-		val rc2_debet = List(List(100,200)) :: rc_debet
+		val rc2_debet = Seq(Seq(Seq(100,200))) ++ rc_debet
 
 		assert (rc2 == rc2_debet)
 	}

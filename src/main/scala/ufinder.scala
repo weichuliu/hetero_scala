@@ -4,22 +4,21 @@ import common.Common._
 import common.Counter
 import common.HFCommon._
 import math.log
-import scala.collection.mutable.{Set => MSet, Seq => MSeq, ListBuffer}
-import scala.collection.{Seq => CSeq}
+import collection.mutable.{Set => MSet, Seq => MSeq, Buffer}
 
 object UFinder {
 	def E_to_CE(E:Seq[Seq[Int]], labels:(Int)=>Int) = 
-		E.map{edge_to_ce(_, labels)}.toVector
+		E.map{edge_to_ce(_, labels)}
 
 	def edge_to_ce(e:Seq[Int], label:(Int)=>Int) = 
-		e.map{n => label(n)}.sorted.toVector
+		e.map{n => label(n)}.sorted
 
 	def ce_to_size(ce:Seq[Int], csize:(Int)=>Int) = {
 		assert (ce(0) != ce(1))
 		ce.map{c => csize(c)}
 	}
 
-	def dtof(d:CSeq[Int], f:Option[(Int)=>Int] = None, k:Int = -1) = f match {
+	def dtof(d:Seq[Int], f:Option[(Int)=>Int] = None, k:Int = -1) = f match {
 		case (None) => {
 			assert (k == -1)
 			(key:Int) => d(key)
@@ -28,7 +27,7 @@ object UFinder {
 		}
 	}
 
-	def calc_LXY(cnt:Counter[Vector[Int]], csize:(Int)=>Int) = {
+	def calc_LXY(cnt:Counter[Seq[Int]], csize:(Int)=>Int) = {
 		var LXY = 0.0
 		for ((k, v) <- cnt.items) {
 			val n:Int = if (k(0) == k(1)) {
@@ -61,7 +60,7 @@ object UFinder {
 				continue = false
 			}
 			val rc = retr_c(g.gen_clist, g2.gen_clist)
-			g.updateC(rc.map{_.toVector}.toVector)
+			g.updateC(rc)
 			// println("-return-")
 		}
 		g
@@ -76,26 +75,26 @@ object UFinder {
 
 class Graph extends KFinderGraph {
 	import UFinder._
-	var E:Vector[Vector[Int]] = Vector()
+	var E:Seq[Seq[Int]] = Seq()
 	var k:Int = 1
 	var M:Int = -1
-	var nsize:Vector[Int] = Vector()
+	var nsize:Seq[Int] = Seq()
 	var nnum:Int = -1
 	var ntotalsize:Int = -1
-	var _nlinks:Vector[Vector[Int]] = Vector()
+	var _nlinks:Seq[Seq[Int]] = Seq()
 
 	var cnum:Int = -1
 	var nlabel:MSeq[Int] = MSeq[Int]()
 	var csize:MSeq[Int] = MSeq[Int]()
 
-	var CE_cnt:Counter[Vector[Int]] = Counter()
+	var CE_cnt:Counter[Seq[Int]] = Counter()
 
 	def readfile(fn:String) {
 		updateE(readNet(fn))
 	}
 
 	def updateE(E:Seq[Seq[Int]]) {
-		val edgecount = Counter(E.map{_.sorted.toVector}:_*)
+		val edgecount = Counter(E.map{_.sorted}:_*)
 		var duplicated = 0
 		for ((e, n) <- edgecount.items) {
 			if (e(0) == e(1)) {
@@ -110,14 +109,14 @@ class Graph extends KFinderGraph {
 		if (duplicated > 0) 
 			println(s"$duplicated edges removed")
 
-		val distinct_E = edgecount.keys.filter{e => e(0) != e(1)}.toVector.sortWith{orderOFVector}
+		val distinct_E = edgecount.keys.filter{e => e(0) != e(1)}.toSeq.sortWith{orderOFSeq}
 		val nnum = distinct_E.flatten.max+1
-		val init_nsize = Vector.fill(nnum)(1)
+		val init_nsize = Seq.fill(nnum)(1)
 		updateE_with_nsize(distinct_E, init_nsize)
 	}
 
 	def updateE_with_nsize(E:Seq[Seq[Int]], nsize:Seq[Int]) {
-		val edgecount = Counter(E.map{_.sorted.toVector}:_*)
+		val edgecount = Counter(E.map{_.sorted}:_*)
 		for ((e, n) <- edgecount.items) {
 			if (e(0) == e(1)) {
 				val s = nsize(e(0))
@@ -127,7 +126,7 @@ class Graph extends KFinderGraph {
 				assert (ce_to_size(e, dtof(nsize)).product >= n)
 			}
 		}
-		this.E = E.map{_.sorted.toVector}.sortWith(orderOFVector).toVector
+		this.E = E.map{_.sorted}.sortWith(orderOFSeq)
 
 		this.k = 1
 		assert (this.E.map{_.length}.forall{_ == 2})
@@ -135,16 +134,16 @@ class Graph extends KFinderGraph {
 		this.nnum = nsize.length
 		this.ntotalsize = nsize.sum
 		assert (this.nnum == this.E.flatten.max+1)
-		this.nsize = nsize.toVector
+		this.nsize = nsize
 
 		this._nlinks = _gennlinks(this.E, this.nnum)
 
-		val init_clist = label_to_clist(Vector.range(0, nnum))
+		val init_clist = label_to_clist(Seq.range(0, nnum))
 		updateC(init_clist)
 	}
 
 	def _gennlinks(E:Seq[Seq[Int]], nnum:Int) = {
-		val _nlinks = Vector.fill(nnum)(ListBuffer[Int]())
+		val _nlinks = Seq.fill(nnum)(Buffer[Int]())
 		for ((e, eid) <- E.zipWithIndex) {
 			val n0 = e(0)
 			val n1 = e(1)
@@ -155,14 +154,14 @@ class Graph extends KFinderGraph {
 				_nlinks(n1).append(eid)
 			}
 		}
-		_nlinks.map{_.toVector}
+		_nlinks
 	}
 
-	def updateC(clist:Vector[Vector[Int]]) {
+	def updateC(clist:Seq[Seq[Int]]) {
 		this.cnum = clist.count{!_.isEmpty}
 		this.nlabel = MSeq(clist_to_label(clist):_*)
 		this.csize = MSeq(clist.map{c => c.map{nsize(_)}.sum}:_*)
-		this.CE_cnt = Counter(E_to_CE(this.E, dtof(this.nlabel)).map{_.toVector}:_*)
+		this.CE_cnt = Counter(E_to_CE(this.E, dtof(this.nlabel)):_*)
 		assert (CE_cnt.keys.forall{k => k(0) <= k(1)})
 	}
 
@@ -183,7 +182,7 @@ class Graph extends KFinderGraph {
 	}
 
 	def uE_nsizes(E:Seq[Seq[Int]], nsizes:Seq[Seq[Int]]) = updateE_with_nsize(E, nsizes(0))
-	def uC(clists:Vector[Vector[Vector[Int]]]) = updateC(clists(0))
+	def uC(clists:Seq[Seq[Seq[Int]]]) = updateC(clists(0))
 
 	def move_node(nid:Int, dst_cid:Int) {
 		val nsz = nsize(nid)

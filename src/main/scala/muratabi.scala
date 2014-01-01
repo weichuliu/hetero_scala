@@ -3,10 +3,10 @@ package muratabi
 import common.Common._
 import common.Counter
 import common.KPartiteGraph
-import scala.collection.mutable.{Set => MSet}
+import collection.mutable.{Set => MSet, Buffer}
 
 object MurataBi {
-	def FastUnfolding(E:List[List[Int]]):List[List[List[Int]]] = {
+	def FastUnfolding(E:Seq[Seq[Int]]):Seq[Seq[Seq[Int]]] = {
 		val g = new Graph()
 		g.updateE(E)
 		val moved = g.reach_minimal()
@@ -21,14 +21,14 @@ object MurataBi {
 		}
 	}
 
-	def retrieve_c(Cxy:List[List[List[Int]]], CCxy:List[List[List[Int]]]):List[List[List[Int]]] = {
+	def retrieve_c(Cxy:Seq[Seq[Seq[Int]]], CCxy:Seq[Seq[Seq[Int]]]):Seq[Seq[Seq[Int]]] = {
 		val rc = for ((layerC, layerCC) <- (Cxy, CCxy).zipped) yield {
 				layerCC map {clist => (clist map {layerC(_)}).flatten}
 		}
-		rc.toList // Traversable toList
+		rc.toSeq // Traversable toList
 	}
 
-	def gen_E_from_C(E:List[List[Int]], grph:Graph) = {
+	def gen_E_from_C(E:Seq[Seq[Int]], grph:Graph) = {
 		E map {e => (e, grph.nlist).zipped.map {(old_nid, nl) => nl(old_nid).comm.CID} }
 	}
 }
@@ -95,15 +95,15 @@ class Community(var CID:Int, val layer:Int, ns:Iterable[Node] = MSet()) {
 }
 
 class Graph extends KPartiteGraph {
-	var E:List[List[Int]] = List()
+	var E:Seq[Seq[Int]] = List()
 	var M = 0
 	var NN:List[Int] = List()
 	var nlist:List[List[Node]] = List()
-	var clist:List[List[Community]] = List()
+	var clist:Seq[Seq[Community]] = Seq()
 
 	def readfile(fn:String) {updateE(readNet(fn))}
 
-	def updateE(E:List[List[Int]]) {
+	def updateE(E:Seq[Seq[Int]]) {
 		this.E = E
 		M = E.length
 		NN = List(0, 1) map { layer:Int =>
@@ -128,16 +128,13 @@ class Graph extends KPartiteGraph {
 	}
 
 	def initC() {
-		val cx:List[List[Int]] = List.range(0, NN(0)) map {List(_)}
-		val cy:List[List[Int]] = List.range(0, NN(1)) map {List(_)}
-
-		val clists = cx :: cy :: Nil
+		val clists = (0 to 1).map {l => Seq.range(0, NN(l)) map {Seq(_)}}
 
 		updateC(clists)
 	}
 
-	def updateC(clists:List[List[List[Int]]]) {
-		def genns(layer:Int, nidlists:List[Int]):Iterable[Node] = {
+	def updateC(clists:Seq[Seq[Seq[Int]]]) {
+		def genns(layer:Int, nidlists:Seq[Int]):Seq[Node] = {
 			nidlists.map{nlist(layer)(_)}
 		}
 		clist = for ((cl, layer) <- clists.zipWithIndex) yield {
@@ -151,7 +148,7 @@ class Graph extends KPartiteGraph {
 		clist foreach {_ foreach {c => c.gen_partner()}}
 	}
 
-	def uC(clist:List[List[List[Int]]]) = updateC(clist)
+	def uC(clist:Seq[Seq[Seq[Int]]]) = updateC(clist)
 
 	def MurataQ():Double = {
 		var elm = 0L
@@ -197,7 +194,7 @@ class Graph extends KPartiteGraph {
 
 	def gen_cinfo() = {
 		val cinfo = for (cl <- clist) yield {
-			cl map {c => (c.nodes map {_.NID}).toList}
+			cl map {c => (c.nodes map {_.NID}).toSeq}
 			}
 		cinfo
 	}

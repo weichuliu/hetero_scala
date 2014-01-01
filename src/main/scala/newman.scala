@@ -3,10 +3,10 @@ package newman
 import common.Common._
 import common.Counter
 import common.KPartiteGraph
-import scala.collection.mutable.{Set => MSet}
+import collection.mutable.{Set => MSet, Buffer}
 
 object Newman {
-	def gen_E_from_C(E:List[List[Int]], grph:Graph) = {
+	def gen_E_from_C(E:Seq[Seq[Int]], grph:Graph) = {
 		val nl = grph.nlist
 		assert(E(0).length == 2)
 		for (e <- E) yield {
@@ -16,11 +16,11 @@ object Newman {
 		}
 	}
 
-	def retrieve_c(C:List[List[Int]], CC:List[List[Int]]):List[List[Int]] = {
+	def retrieve_c(C:Seq[Seq[Int]], CC:Seq[Seq[Int]]):Seq[Seq[Int]] = {
 		CC map {c => c.map({C(_)}).flatten}
 	}
 
-	def FastUnfolding(E:List[List[Int]]):List[List[Int]] = {
+	def FastUnfolding(E:Seq[Seq[Int]]):Seq[Seq[Int]] = {
 		val g = new Graph()
 		g.updateE(E)
 		val moved = g.reach_minimal()
@@ -75,15 +75,15 @@ class Community(var CID:Int, ns:Iterable[Node] = MSet()) {
 }
 
 class Graph extends KPartiteGraph {
-	var E:List[List[Int]] = List()
+	var E:Seq[Seq[Int]] = List()
 	var M = 0
 	var N = 0
 	var nlist:List[Node] = List()
-	var clist:List[Community] = List()
+	var clist:Seq[Community] = Seq()
 
 	def readfile(fn:String) {updateE(readNet(fn))}
 
-	def updateE(E:List[List[Int]]) {
+	def updateE(E:Seq[Seq[Int]]) {
 		if (E(0).length == 3) {
 			// println("weighted E, init Newman as weighted")
 			updateWE(E)
@@ -103,7 +103,7 @@ class Graph extends KPartiteGraph {
 		}
 	}
 
-	def updateWE(WE:List[List[Int]]) {
+	def updateWE(WE:Seq[Seq[Int]]) {
 		this.E = List()
 		val tE = E.transpose
 		val n0l = tE(0)
@@ -127,12 +127,12 @@ class Graph extends KPartiteGraph {
 		clist foreach {_.update_ae}
 	}
 
-	def updateC(cl: List[List[Int]]) {
+	def updateC(cl: Seq[Seq[Int]]) {
 		clist = for ((c, cid) <- cl.zipWithIndex) yield new Community(cid, c.map(nlist(_)))
 		clist foreach {_.update_ae}
 	}
 
-	def uC(clist:List[List[List[Int]]]) = updateC(clist(0))
+	def uC(clist:Seq[Seq[Seq[Int]]]) = updateC(clist(0))
 
 	def modularity:Double = {
 		val aiisum = clist.view.map({_.aii}).sum

@@ -4,21 +4,20 @@ import common.Common._
 import common.Counter
 import common.HFCommon._
 import math.log
-import scala.util.Random.{shuffle, nextInt => randint}
-import scala.collection.mutable.{Set => MSet, Seq => MSeq, ListBuffer}
-import scala.collection.{Seq => CSeq}
+import util.Random.{shuffle, nextInt => randint}
+import collection.mutable.{Set => MSet, Seq => MSeq, Buffer}
 
 object KFinder {
 	def E_to_CE(E:Seq[Seq[Int]], labels:(Int, Int)=>Int) = 
-		E.map{edge_to_ce(_, labels)}.toVector
+		E.map{edge_to_ce(_, labels)}
 
 	def edge_to_ce(e:Seq[Int], labels:(Int, Int)=>Int) = 
-		e.zipWithIndex.map{case (n, layer) => labels(layer, n)}.toVector
+		e.zipWithIndex.map{case (n, layer) => labels(layer, n)}
 
 	def ce_to_size(ce:Seq[Int], sizes:(Int, Int)=>Int) = 
-		ce.zipWithIndex.map{case (c, layer) => sizes(layer, c)}.toVector
+		ce.zipWithIndex.map{case (c, layer) => sizes(layer, c)}
 
-	def dtof(d:CSeq[CSeq[Int]], f:Option[(Int)=>Int]=None, l:Int = -1, k:Int = -1) = f match {
+	def dtof(d:Seq[Seq[Int]], f:Option[(Int)=>Int]=None, l:Int = -1, k:Int = -1) = f match {
 		case (None) => {
 			assert (l == -1 && k == -1)
 			(layer:Int, key:Int) => d(layer)(key)
@@ -31,7 +30,7 @@ object KFinder {
 		}
 	}
 
-	def calc_LXY(cnt:Counter[Vector[Int]], csizes:(Int, Int)=>Int):Double = 
+	def calc_LXY(cnt:Counter[Seq[Int]], csizes:(Int, Int)=>Int):Double = 
 		cnt.items.map{case(ce, cnt) => nCrln(ce_to_size(ce, csizes).product, cnt)}.sum
 
 	def Louvain(E:Seq[Seq[Int]]) = {
@@ -52,7 +51,7 @@ object KFinder {
 				continue = false
 			}
 			val rc = (g.gen_clists, g2.gen_clists).zipped.map{retr_c(_,_)}
-			g.updateC(rc.map{_.map{_.toVector}.toVector})
+			g.updateC(rc)
 			// println("-return-")
 		}
 		g.gen_clists
@@ -65,19 +64,19 @@ object KFinder {
 
 class Graph extends KFinderGraph {
 	import KFinder._
-	var E:Vector[Vector[Int]] = Vector()
+	var E:Seq[Seq[Int]] = Seq()
 	var k:Int = -1
 	var M:Int = -1
-	var nsizes:Vector[Vector[Int]] = Vector()
-	var nnums:Vector[Int] = Vector()
-	var ntotalsize:Vector[Int] = Vector()
-	var _nlinks:Vector[Vector[Vector[Int]]] = Vector()
+	var nsizes:Seq[Seq[Int]] = Seq()
+	var nnums:Seq[Int] = Seq()
+	var ntotalsize:Seq[Int] = Seq()
+	var _nlinks:Seq[Seq[Seq[Int]]] = Seq()
 
 	var cnums:MSeq[Int] = Array[Int]()
-	var nlabels:Vector[MSeq[Int]] = Vector()
-	var csizes:Vector[MSeq[Int]] = Vector()
+	var nlabels:Seq[MSeq[Int]] = Seq()
+	var csizes:Seq[MSeq[Int]] = Seq()
 
-	var CE_cnt:Counter[Vector[Int]] = Counter()
+	var CE_cnt:Counter[Seq[Int]] = Counter()
 
 
 
@@ -86,7 +85,7 @@ class Graph extends KFinderGraph {
 	}
 
 	def updateE(E:Seq[Seq[Int]]) {
-		val edgecount = Counter(E.map{_.toVector}:_*)
+		val edgecount = Counter(E:_*)
 		var duplicated = 0
 		for ((e, n) <- edgecount.items) {
 			if (n > 1) {
@@ -98,46 +97,46 @@ class Graph extends KFinderGraph {
 			println(s"$duplicated edges removed")
 
 
-		val distinct_E = edgecount.keys.toVector.sortWith{orderOFVector}
+		val distinct_E = edgecount.keys.toSeq.sortWith{orderOFSeq}
 		val nnums = distinct_E.transpose.map{_.max+1}
-		val init_nsizes = nnums.map{nnum => Vector.fill(nnum)(1)}
+		val init_nsizes = nnums.map{nnum => Seq.fill(nnum)(1)}
 		updateE_with_nsizes(distinct_E, init_nsizes)
 
 	}
 
 	def updateE_with_nsizes(E:Seq[Seq[Int]], nsizes:Seq[Seq[Int]]) {
-		val edgecount = Counter(E.map{_.toVector}:_*)
+		val edgecount = Counter(E:_*)
 		for ((e, n) <- edgecount.items) {
 			if (n > 1) 
 				if (ce_to_size(e, dtof(nsizes)).product < n)
 					assert (false)
 		}
-		this.E = E.map{_.toVector}.toVector.sortWith(orderOFVector)
+		this.E = E.sortWith(orderOFSeq)
 
 		this.k = this.E(0).length
 		assert (this.E.map{_.length}.forall{_ == this.k})
 		this.M = this.E.length
-		this.nnums = nsizes.toVector.map{_.length}
-		this.ntotalsize = nsizes.toVector.map{_.sum}
+		this.nnums = nsizes.map{_.length}
+		this.ntotalsize = nsizes.map{_.sum}
 		assert (this.nnums == this.E.transpose.map{_.max+1})
-		this.nsizes = nsizes.map{_.toVector}.toVector
+		this.nsizes = nsizes
 
 		this._nlinks = gennlinks(this.E, this.nnums)
 
-		val init_clists = this.nnums.map{nnum => label_to_clist(Vector.range(0, nnum))}
+		val init_clists = this.nnums.map{nnum => label_to_clist(Seq.range(0, nnum))}
 		updateC(init_clists)
 	}
 
-	def gennlinks(E:Vector[Vector[Int]], nnums:Vector[Int]) = {
-		val _nlinks = nnums.map{Vector.fill(_)(ListBuffer[Int]())}
+	def gennlinks(E:Seq[Seq[Int]], nnums:Seq[Int]) = {
+		val _nlinks = nnums.map{Seq.fill(_)(Buffer[Int]())}
 		for {(e, eid) <- E.zipWithIndex
 			(nid, layer) <- e.zipWithIndex
 		} _nlinks(layer)(nid).append(eid)
 
-		_nlinks.map{_.map{_.toVector}}
+		_nlinks
 	}
 
-	def updateC(clists:Vector[Vector[Vector[Int]]]) {
+	def updateC(clists:Seq[Seq[Seq[Int]]]) {
 		this.cnums = MSeq(clists.map{clist => clist.count{!_.isEmpty}}:_*)
 		this.nlabels = clists.map{clist => MSeq(clist_to_label(clist):_*)}
 		this.csizes = clists.zipWithIndex.map{
@@ -159,7 +158,7 @@ class Graph extends KFinderGraph {
 	}
 
 	def uE_nsizes(E:Seq[Seq[Int]], nsizes:Seq[Seq[Int]]) = updateE_with_nsizes(E, nsizes)
-	def uC(clists:Vector[Vector[Vector[Int]]]) = updateC(clists)
+	def uC(clists:Seq[Seq[Seq[Int]]]) = updateC(clists)
 
 	def move_node(layer:Int, nid:Int, dst_cid:Int) {
 		val nsz = nsizes(layer)(nid)
@@ -229,19 +228,17 @@ class Graph extends KFinderGraph {
 	}
 
 	def alldMLXY(layer:Int, nid:Int) = {
-		else {
-				val src_cid = nlabels(layer)(nid)
-				val dqsrc = quick_dMLXY(layer, nid, src_cid)
-				val dQlist = 
-				if (!csizes(layer).contains(0)) {
-					for ((csize, cid) <- csizes(layer).zipWithIndex) yield quick_dMLXY(layer, nid, cid)
-				} else {
-					val emptycid = csizes(layer).indexOf(0)
-					val emptydQ = quick_dMLXY(layer, nid, emptycid)
-					for ((csize, cid) <- csizes(layer).zipWithIndex) yield {if (csize==0) emptydQ else quick_dMLXY(layer, nid, cid)}
-				}
-				dQlist.map{dq => dq - dqsrc}
+		val src_cid = nlabels(layer)(nid)
+		val dqsrc = quick_dMLXY(layer, nid, src_cid)
+		val dQlist = 
+		if (!csizes(layer).contains(0)) {
+			for ((csize, cid) <- csizes(layer).zipWithIndex) yield quick_dMLXY(layer, nid, cid)
+		} else {
+			val emptycid = csizes(layer).indexOf(0)
+			val emptydQ = quick_dMLXY(layer, nid, emptycid)
+			for ((csize, cid) <- csizes(layer).zipWithIndex) yield {if (csize==0) emptydQ else quick_dMLXY(layer, nid, cid)}
 		}
+		dQlist.map{dq => dq - dqsrc}
 	}
 
 	def calc_argmin_c(layer:Int, nid:Int):Int = {

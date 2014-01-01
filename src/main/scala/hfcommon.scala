@@ -1,13 +1,13 @@
 package common
 import Common.{belongJudger}
-import scala.math.log
-import collection.mutable.{Map=> MMap, Seq=>MSeq, ListBuffer}
+import math.log
+import collection.mutable.{Map=> MMap, Seq=>MSeq, Buffer}
 
 object HFCommon {
 	trait KFinderGraph {
 		def updateE(E:Seq[Seq[Int]])
 		def uE_nsizes(E:Seq[Seq[Int]], nsizes:Seq[Seq[Int]])
-		def uC(clists:Vector[Vector[Vector[Int]]])
+		def uC(clists:Seq[Seq[Seq[Int]]])
 		def alldMLXY(layer:Int, nid:Int):MSeq[Double]
 		def mv_nd(layer:Int, nid:Int, dst_cid:Int)
 		def k:Int
@@ -35,18 +35,18 @@ object HFCommon {
 		assert (x >= 1)
 		if (x < 12) {
 			// gammaln(0) = inf, gammaln(1) = gammaln(2) = log(1)
-			log(List(0, 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880,
+			log(Seq(0, 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880,
 				3628800)(x))
 		} else {
 			val _x = x.toDouble
-			val c = List(1.0/12.0, -1.0/360.0,
+			val c = Seq(1.0/12.0, -1.0/360.0,
 				1.0/1260.0, -1.0/1680.0,
 				1.0/1188.0, -691.0/360360.0,
 				1.0/156.0,-3617.0/122400.0)
 			val z = 1.0/(_x*_x)
 			// replace with reduceRight
 			// var s = c(7)
-			// for (i <- List(6,5,4,3,2,1,0)) {
+			// for (i <- Seq(6,5,4,3,2,1,0)) {
 			// 	s *= z
 			// 	s += c(i)
 			// }
@@ -58,9 +58,9 @@ object HFCommon {
 		}
 	}
 
-	def orderOFVector(A:Vector[Int], B:Vector[Int]):Boolean = {
-		if (A.length == 1 || A(0) != B(0)) A(0) < B(0)
-		else orderOFVector(A.slice(1, A.length), B.slice(1, B.length)) 
+	def orderOFSeq(A:Seq[Int], B:Seq[Int]):Boolean = {
+		if (A.length == 1 || B.length == 1 || A(0) != B(0)) A(0) < B(0)
+		else orderOFSeq(A.tail, B.tail)
 	}
 
 	def retr_c(lc:Seq[Seq[Int]], cofc:Seq[Seq[Int]]) = {
@@ -71,11 +71,11 @@ object HFCommon {
 
 	def label_to_clist(label:Seq[Int]) = {
 		val cnum:Int = label.max + 1
-		val clist = Vector.range(0, cnum).map{i => ListBuffer[Int]()}
+		val clist = Seq.range(0, cnum).map{i => Buffer[Int]()}
 		for ((cid, nid) <- label.zipWithIndex) {
 			clist(cid).append(nid)
 		}
-		clist.map{_.toVector}
+		clist.map{_.toSeq}
 	}
 
 	def clist_to_label(clist:Seq[Seq[Int]]):MSeq[Int] = {
@@ -90,7 +90,7 @@ object HFCommon {
 
 	// Below: copy from Combiner
 
-	def subgraph_typefinder(E:List[List[Int]], nr:List[Int]):(String, List[Int]) = {
+	def subgraph_typefinder(E:Seq[Seq[Int]], nr:Seq[Int]):(String, Seq[Int]) = {
 		if (E.length == 0) {System.err.println("empty subgraph E"); assert(false)}
 
 		val node_to_layer = belongJudger(nr)
@@ -108,17 +108,17 @@ object HFCommon {
 		E foreach {e => assert(layerinfo == e.map{node_to_layer(_)})}
 		(gtype, layerinfo)
 	}
-	def gen_E_from_C(E:List[List[Int]], C:List[List[Int]]) = {
+	def gen_E_from_C(E:Seq[Seq[Int]], C:Seq[Seq[Int]]) = {
 		val c_of_n = gen_cofn_from_c(C)
 		E map {e => e map {c_of_n(_)}}
 	}
-	def gen_cofn_from_c(C:List[List[Int]]) = {
+	def gen_cofn_from_c(C:Seq[Seq[Int]]) = {
 		val c_of_n = MMap[Int, Int]()
 		for ((c, cid) <- C.zipWithIndex; n <- c) c_of_n(n) = cid
 		c_of_n.toMap
 	}
 
-	def gen_nr_from_c(nr:List[Int], C:List[List[Int]]) = {
+	def gen_nr_from_c(nr:Seq[Int], C:Seq[Seq[Int]]) = {
 	    val c_of_n = gen_cofn_from_c(C)
 	    val l_of_n = belongJudger(nr)
 		

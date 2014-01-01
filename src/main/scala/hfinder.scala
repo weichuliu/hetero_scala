@@ -7,7 +7,7 @@ import ufinder.{Graph => UGraph}
 import kfinder.{Graph => KGraph}
 import math.log
 import System.err.{println => perr}
-import collection.mutable.{Seq=>MSeq, Map=>MMap, ListBuffer}
+import collection.mutable.{Seq=>MSeq, Map=>MMap, Buffer}
 
 object HFinder {
 	def graphinitdict:Map[String,KFinderGraph] = Map(
@@ -24,10 +24,10 @@ object HFinder {
 			hg.minimizeQ()
 			// println(hg.HQ)
 			// println("merge")
-			val clist = hg.c_result.map{_.toList}.toList
-			val newnr = gen_nr_from_c(hg.nr.toList, clist)
+			val clist = hg.c_result
+			val newnr = gen_nr_from_c(hg.nr, clist)
 			val newlr = hg.lr
-			val newE = gen_E_from_C(hg.E_list.flatten.map{_.toList}, clist)
+			val newE = gen_E_from_C(hg.E_list.flatten, clist)
 			val fs = hg.nsizes.flatten
 			val newnsize = clist.map{_.map{fs(_)}.sum}
 			val newnsizes = rangeToPair(newnr).map{
@@ -41,17 +41,17 @@ object HFinder {
 			// println(hg2.HQ)
 			// println("Unpack")
 			val retc = retr_c(hg.c_result, hg2.c_result)
-			val old_cr = gen_nr_from_c(hg.nr.toList, retc.map{_.toList}.toList)
+			val old_cr = gen_nr_from_c(hg.nr, retc)
 			val n_empty_c = for ((x, y) <- (hg.nr, old_cr).zipped) yield (x - y)
 
 			val retc_l = (n_empty_c, rangeToPair(old_cr)).zipped.map {
-				case (x, b :: u :: Nil) => retc.slice(b,u) ++ Vector.fill(x)(Vector[Int]())
-				case _ => {assert(false);Vector()}
+				case (x, b :: u :: Nil) => retc.slice(b,u) ++ Seq.fill(x)(Seq[Int]())
+				case _ => {assert(false);Seq()}
 			}
-			val retc_flat = retc_l.flatten
-			hg.updateC(retc_flat.toVector)
+			val retc_flat = retc_l.flatten.toSeq
+			hg.updateC(retc_flat)
 		}
-		hg.c_list.filter{!_.isEmpty}.map{_.toList}.toList
+		hg.c_list.filter{!_.isEmpty}
 	}
 
 	def fnLouvain(folder:String) = {
@@ -61,27 +61,27 @@ object HFinder {
 
 	}
 
-	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Vector[Vector[Int]] = {
+	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Seq[Seq[Int]] = {
 		// input subE, return distinct_E
 		if (u == true) {
-			val distinct_E = E.map{_.sorted.toVector}.filter{e=>e(0)!=e(1)}.distinct.sortWith(orderOFVector).toVector
+			val distinct_E = E.map{_.sorted}.filter{e=>e(0)!=e(1)}.distinct.sortWith(orderOFSeq)
 			val rm_edge = distinct_E.length - E.length
 			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
 			distinct_E
 		}
 
 		else { 
-			val distinct_E = E.map{_.toVector}.distinct.sortWith(orderOFVector).toVector
+			val distinct_E = E.distinct.sortWith(orderOFSeq)
 			val rm_edge = distinct_E.length - E.length
 			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
 			distinct_E
 		}
 	}
 
-	def checkE(E:Seq[Seq[Int]], u:Boolean, nsizelist:Seq[Seq[Int]]):Vector[Vector[Int]] = {
+	def checkE(E:Seq[Seq[Int]], u:Boolean, nsizelist:Seq[Seq[Int]]):Seq[Seq[Int]] = {
 		val nsizes = nsizelist.flatten
 		if (u == true) {
-			val edgecount = Counter(E.map{_.sorted.toVector}:_*)
+			val edgecount = Counter(E.map{_.sorted}:_*)
 			for ((e, n) <- edgecount.items) {
 				if (e(0) == e(1)) {
 					val s = nsizes(e(0))
@@ -96,12 +96,12 @@ object HFinder {
 					}
 				}
 			}
-			val distinct_E = E.map{_.toVector.sorted}.sortWith(orderOFVector).toVector
+			val distinct_E = E.map{_.sorted}.sortWith(orderOFSeq)
 			distinct_E
 		} 
 
 		else {
-			val edgecount = Counter(E.toVector.map{_.toVector}:_*)
+			val edgecount = Counter(E:_*)
 			for ((e, n) <- edgecount.items)
 				if (n > 1)
 					if (e.map{nsizes(_)}.product < n) {
@@ -109,41 +109,41 @@ object HFinder {
 						assert(false)
 					}
 
-			val distinct_E = E.map{_.toVector}.sortWith(orderOFVector).toVector
+			val distinct_E = E.sortWith(orderOFSeq)
 			distinct_E
 		}
 	}
 }
 
-class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[Int]] = Vector()) {
+class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[Int]] = Seq()) {
 	import HFinder._
 	val nsizes:Seq[MSeq[Int]] = if (!_nsizes.isEmpty) _nsizes else nr.map{n => MSeq.fill(n)(1)}
 	val ntotalsize = nsizes.map{_.sum}
 
-	val E_list:List[Vector[Vector[Int]]] = 
+	val E_list:Seq[Seq[Seq[Int]]] = 
 	if (nsizes.isEmpty) {
-		rangeToPair(_lr.toList).map{case List(base, upper) =>
+		rangeToPair(_lr).map{case Seq(base, upper) =>
 			preprocessE(E.slice(base, upper), 
-						subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni")
+						subgraph_typefinder(E.slice(base, upper), nr)._1=="uni")
 		}
 	} else {
-		rangeToPair(_lr.toList).map{case List(base, upper) =>
+		rangeToPair(_lr).map{case Seq(base, upper) =>
 			checkE(E.slice(base, upper),
-					subgraph_typefinder(E.slice(base, upper).map{_.toList}.toList, nr.toList)._1=="uni",
+					subgraph_typefinder(E.slice(base, upper), nr)._1=="uni",
 					nsizes)
 		}
 	}
 
 	val lr = E_list.map{_.length}
 
-	val subg_list = E_list.map{subE => new SubGraph(subE, nr.toList, _nsizes)}
+	val subg_list = E_list.map{subE => new SubGraph(subE, nr, _nsizes)}
 
-	val c_list = Vector.range(0, nr.sum).map{i => ListBuffer[Int](i)}
+	val c_list = Seq.range(0, nr.sum).map{i => Buffer[Int](i)}
 
-	var c_result:Vector[Vector[Int]] = Vector()
+	var c_result:Seq[Seq[Int]] = Seq()
 
 	def HQ = {
-		val cnum = rangeToPair(nr.toList).map{case List(base, upper) => c_list.slice(base, upper).count(!_.isEmpty)}
+		val cnum = rangeToPair(nr).map{case Seq(base, upper) => c_list.slice(base, upper).count(!_.isEmpty)}
 		val S = (nr, cnum).zipped.map{case (n, c) => n * log(c)}.sum
 		val M = subg_list.map{_.g._M}.sum
 		val LXY = subg_list.map{_.g._LXY}.sum
@@ -151,27 +151,27 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 	}
 
 	def amc(gnid:Int):Int = {
-		val layer = belongJudger(nr.toList)(gnid)
-		val clist_layer = {val bu = rangeToPair(nr.toList)(layer); val b = bu(0); val u = bu(1); c_list.slice(b, u)}
+		val layer = belongJudger(nr)(gnid)
+		val clist_layer = {val bu = rangeToPair(nr)(layer); val b = bu(0); val u = bu(1); c_list.slice(b, u)}
 		val cnum = clist_layer.count{!_.isEmpty}
 
 		if (cnum == 1)
 			c_list.indexWhere(_.contains(gnid))
 		else {
 		val srcc = c_list.filter{_.contains(gnid)}(0)
-		val src_tobe_empty = if (srcc.toList == List(gnid)) 1 else 0
+		val src_tobe_empty = if (srcc(0) == gnid && srcc.length == 1) 1 else 0
 		val dst_change = clist_layer.map{c => if (c.count{_ != gnid} == 0) 1 else 0}
 		val alldS = dst_change.map{change => ntotalsize(layer) * (log(cnum - src_tobe_empty + change) - log(cnum))}
 		val alldmlxys = subg_list.map{_.alldMLXY(gnid)}.filter{_.length != 0}
 		assert {val l = alldS.length; alldmlxys.forall{_.length == l}}
 		val l = alldS.length
-		val dqlist = (for ((ds, dmlxys) <- (alldS, alldmlxys.transpose).zipped) yield {ds + dmlxys.sum}).toList
+		val dqlist = (for ((ds, dmlxys) <- (alldS, alldmlxys.transpose).zipped) yield {ds + dmlxys.sum})
 
 		val mindQ = dqlist.min
 		if (mindQ >= 0)
 			c_list.indexWhere(_.contains(gnid))
 		else {
-			val lcid = dqlist.indexOf(mindQ)
+			val lcid = dqlist.toSeq.indexOf(mindQ)
 			return lcid + nr.slice(0, layer).sum
 		}
 		}
@@ -195,7 +195,7 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 			}
 			if (moved == 0) {
 				val cls = c_list.filter{!_.isEmpty}
-				c_result = cls.map{_.toVector}
+				c_result = cls
 			} else {
 				node_picker = _rannseq(nr.sum)
 				moved = -1
@@ -228,9 +228,9 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 
 
 
-class SubGraph(E:Vector[Vector[Int]], nr:List[Int], nsizes:Seq[MSeq[Int]] = Vector()) {
+class SubGraph(E:Seq[Seq[Int]], nr:Seq[Int], nsizes:Seq[MSeq[Int]] = Seq()) {
 	val global_E = E
-	val (gtype, layerinfo) = subgraph_typefinder(E.map{_.toList}.toList, nr)
+	val (gtype, layerinfo) = subgraph_typefinder(E, nr)
 	assert (Set("uni","bi","tri").contains(gtype))
 
 	// init a corresponding graph
@@ -270,31 +270,31 @@ class SubGraph(E:Vector[Vector[Int]], nr:List[Int], nsizes:Seq[MSeq[Int]] = Vect
 	val lgt_c = glt_c map {_.swap}
 
 	// generate real_c, use for update
-	def real_cl:Vector[Vector[Vector[Int]]] = 
+	def real_cl:Seq[Seq[Seq[Int]]] = 
 	if (gtype == "uni") {
 		val g_layer = layerinfo(0)
 		val pair = rangeToPair(nr)(g_layer)
-		val real_c = Vector.range(pair(0), pair(1)) map {i => ListBuffer[Int]()}
+		val real_c = Seq.range(pair(0), pair(1)) map {i => Buffer[Int]()}
 
 		for {(c, cid) <- real_c.zipWithIndex
 			g_cid = lgt_c((0, cid))
 			g_nid = g_cid
 			if (glt_n contains g_nid)
 			} c.append(glt_n(g_nid)._2)
-		Vector(real_c.map{_.toVector})
+		Seq(real_c.map{_.toSeq})
 		} 
 	else {
 		for {
-			(g_layer, l_layer) <- layerinfo.toVector.zipWithIndex
+			(g_layer, l_layer) <- layerinfo.zipWithIndex
 			pair = rangeToPair(nr)(g_layer)
 		} yield {
-			val real_c = Vector.range(pair(0), pair(1)) map {i => ListBuffer[Int]()}
+			val real_c = Seq.range(pair(0), pair(1)) map {i => Buffer[Int]()}
 			for {(c, cid) <- real_c.zipWithIndex
 				g_cid = lgt_c((l_layer, cid))
 				g_nid = g_cid
 				if (glt_n contains g_nid)
 			} c.append(glt_n(g_nid)._2)
-			real_c.map{_.toVector}
+			real_c.toSeq
 		}
 	}
 
@@ -305,7 +305,7 @@ class SubGraph(E:Vector[Vector[Int]], nr:List[Int], nsizes:Seq[MSeq[Int]] = Vect
 	}
 	else {
 		val global_nsize = nsizes.flatten
-		val local_nsize = Vector.range(0, List("uni","bi","tri").indexOf(gtype)+1).map{i => ListBuffer[Int]()}
+		val local_nsize = Seq.range(0, List("uni","bi","tri").indexOf(gtype)+1).map{i => Buffer[Int]()}
 		for (lp <- lgt_n.keys.toList.sorted) {
 			val gnid = lgt_n(lp)
 			val (layer, lnid) = lp

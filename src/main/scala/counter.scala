@@ -1,5 +1,5 @@
 package common
-import scala.collection.mutable.{Map => MMap}
+import collection.mutable.{Map => MMap}
 
 class Counter[T] {
 	val cntr:MMap[T,Int] = MMap()
