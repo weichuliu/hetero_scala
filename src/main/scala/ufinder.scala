@@ -63,14 +63,32 @@ object UFinder {
 			g.updateC(rc)
 			// println("-return-")
 		}
-		g
+		g.gen_clist
 	}
 
 	def fnLouvain(fn:String) = {
 		Louvain(readNet(fn))
 	}
 
-	
+	def FU(E:Seq[Seq[Int]], nsize:Option[Seq[Int]]):Seq[Seq[Int]]	= {
+		val g = new Graph
+		nsize match {
+			case Some(_nsize) => g.updateE_with_nsize(E, _nsize)
+			case None => g.updateE(E)
+			case _ => assert(false)
+		}
+		val looped = g.minimizeQ // 1 as not moved
+		if (looped == 1) 
+			g.gen_clist.filter{!_.isEmpty}
+		else {
+			val c_result = FU(g.gen_CE, Some(g.csize))
+			retr_c(g.gen_clist, c_result)
+		}
+	}
+
+	def fnFU(fn:String) = {
+		FU(readNet(fn), None)
+	}
 }
 
 class Graph extends KFinderGraph {
@@ -211,23 +229,42 @@ class Graph extends KFinderGraph {
 		move_node(nid, dst_cid)
 	}
 
-	def dSM(nid:Int, dst_cid:Int):(Double, Double) = {
+	def src_tobe_empty_dst_was_empty(nid:Int, dst_cid:Int):(Boolean, Boolean) = {
 		val nsz = nsize(nid)
 		val src_cid = nlabel(nid)
+
+		val src_tobe_empty = (csize(src_cid) == nsz)
+		val dst_was_empty = if (src_cid == dst_cid) src_tobe_empty else csize(dst_cid) == 0
+		(src_tobe_empty, dst_was_empty)
+
+	}
+
+	def dS(nid:Int, dst_cid:Int):Double = {
+		val src_cid = nlabel(nid)
 		if (src_cid == dst_cid)
-			(0.0, 0.0)
+			0.0
 		else {
 			val lnks = _nlinks(nid).map{eid => E(eid)}
 			val old_clnk = Counter(E_to_CE(lnks, dtof(nlabel)):_*)
+			(src_tobe_empty_dst_was_empty(nid, dst_cid)) match {
+				case (true, false) => ntotalsize * (log(cnum - 1) - log(cnum))
+				case (false, true) => ntotalsize * (log(cnum + 1) - log(cnum))
+				case _ => 0.0
+			}
+		}
+	}
 
-			val src_tobe_empty = (csize(src_cid) == nsz)
-			val dst_was_empty = if (src_cid == dst_cid) src_tobe_empty else csize(dst_cid) == 0
-
-			(src_tobe_empty, dst_was_empty) match {
-				case (true, true) => (0.0, 0.0)
-				case (true, false) => (ntotalsize * (log(cnum - 1) - log(cnum)), - log(M + 1) * cnum)
-				case (false, true) => (ntotalsize * (log(cnum + 1) - log(cnum)), log(M + 1) * (cnum + 1))
-				case (false, false) => (0.0, 0.0)
+	def dM(nid:Int, dst_cid:Int):Double = {
+		val src_cid = nlabel(nid)
+		if (src_cid == dst_cid)
+			0.0
+		else {
+			val lnks = _nlinks(nid).map{eid => E(eid)}
+			val old_clnk = Counter(E_to_CE(lnks, dtof(nlabel)):_*)
+			(src_tobe_empty_dst_was_empty(nid, dst_cid)) match {
+				case (true, false) => - log(M + 1) * cnum
+				case (false, true) => log(M + 1) * (cnum + 1)
+				case _ => 0.0
 			}
 		}
 	}
@@ -255,12 +292,11 @@ class Graph extends KFinderGraph {
 	}
 
 	def dQ(nid:Int, dst_cid:Int):Double = {
-		val (dS, dM) = dSM(nid, dst_cid)
-		dS + dM + dLXY(nid, dst_cid)
+		dS(nid, dst_cid) + dM(nid, dst_cid) + dLXY(nid, dst_cid)
 	}
 
 	def dMLXY(nid:Int, dst_cid:Int) = {
-		dSM(nid, dst_cid)._2 + dLXY(nid, dst_cid)
+		dM(nid, dst_cid) + dLXY(nid, dst_cid)
 	}
 
 	def alldMLXY(layer:Int, nid:Int) = {

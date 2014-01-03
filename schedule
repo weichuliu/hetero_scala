@@ -14,11 +14,18 @@ complete the code
 combiner
 make a entry point to run with args
 completed: ufinder, kfinder, hfinder
+split dS, dM
 
 [next]
-split dS, dM
+modify the scalacombiner and scalahfinder's stdout.
+	print stderr on cmd and use some symbol to mark the result
+
 write dQ_merge
 write FU instead of pack-unpack
+try  1.not to use dtof to see if it's being faster (or in pyver use cProfile)
+try  2.sort CE_cnt to calc dQlist?
+try  3.only calculate adjacent node
+add view in scala ver
 optimize speed: round loop and merge
 
 

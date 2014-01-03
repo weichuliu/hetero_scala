@@ -60,6 +60,26 @@ object KFinder {
 	def fnLouvain(fn:String) = {
 		Louvain(readNet(fn))
 	}
+
+	def FU(E:Seq[Seq[Int]], nsizes:Option[Seq[Seq[Int]]]):Seq[Seq[Seq[Int]]] = {
+		val g = new Graph
+		nsizes match {
+			case Some(_nsizes) => g.updateE_with_nsizes(E, _nsizes)
+			case None => g.updateE(E)
+			case _ => assert(false)
+		}
+		val looped = g.minimizeQ // 1 as not moved
+		if (looped == 1) 
+			g.gen_clists.map{_.filter{!_.isEmpty}}
+		else {
+			val c_result = FU(g.gen_CE, Some(g.csizes))
+			(g.gen_clists, c_result).zipped.map{retr_c(_,_)}
+		}
+	}
+
+	def fnFU(fn:String) = {
+		FU(readNet(fn), None)
+	}
 }
 
 class Graph extends KFinderGraph {
@@ -182,21 +202,34 @@ class Graph extends KFinderGraph {
 
 	def mv_nd(layer:Int, nid:Int, dst_cid:Int) = move_node(layer, nid, dst_cid)
 
-	def quick_dSM(layer:Int, nid:Int, dst_cid:Int):(Double,Double) = {
+	def src_tobe_empty_dst_was_empty(layer:Int, nid:Int, dst_cid:Int) = {
 		val nsz = nsizes(layer)(nid)
 		val src_cid = nlabels(layer)(nid)
 
 		val src_tobe_empty = (csizes(layer)(src_cid) == nsz)
 		val dst_was_empty = if (src_cid == dst_cid) src_tobe_empty else csizes(layer)(dst_cid) == 0
-		(src_tobe_empty, dst_was_empty) match {
-			case (true, true) => if (cnums(layer) == 1) (0.0, cnums.product / cnums(layer) * log(M + 1))
-								else (ntotalsize(layer) * (log(cnums(layer)) - log(cnums(layer) - 1)), cnums.product / cnums(layer) * log(M + 1))
-			case (false, true) => (ntotalsize(layer) * (log(cnums(layer)) + 1) - log(cnums(layer)), cnums.product / cnums(layer) * log(M + 1))
-			case _ => (0, 0)
+		(src_tobe_empty, dst_was_empty)
+	}
+
+	def q_dS(layer:Int, nid:Int, dst_cid:Int):Double = {
+		(src_tobe_empty_dst_was_empty(layer, nid, dst_cid)) match {
+			case (true, true) => if (cnums(layer) == 1) 0.0
+								else ntotalsize(layer) * (log(cnums(layer)) - log(cnums(layer) - 1))
+			case (false, true) => ntotalsize(layer) * (log(cnums(layer)) + 1) - log(cnums(layer))
+			case _ => 0.0
 		}
 	}
 
-	def quick_dLXY(layer:Int, nid:Int, dst_cid:Int):Double = {
+	def q_dM(layer:Int, nid:Int, dst_cid:Int):Double = {
+		(src_tobe_empty_dst_was_empty(layer, nid, dst_cid)) match {
+			case (true, true) => if (cnums(layer) == 1) cnums.product / cnums(layer) * log(M + 1)
+								else  cnums.product / cnums(layer) * log(M + 1)
+			case (false, true) => cnums.product / cnums(layer) * log(M + 1)
+			case _ => 0.0
+		}
+	}
+
+	def q_dLXY(layer:Int, nid:Int, dst_cid:Int):Double = {
 		val nsz = nsizes(layer)(nid)
 		val src_cid = nlabels(layer)(nid)
 		val lnks = _nlinks(layer)(nid).map{eid => E(eid)}
@@ -218,25 +251,24 @@ class Graph extends KFinderGraph {
 
 	}
 
-	def quick_dQ(layer:Int, nid:Int, dst_cid:Int):Double = {
-		val (dS, dM) = quick_dSM(layer, nid, dst_cid)
-		dS + dM + quick_dLXY(layer, nid, dst_cid)
+	def q_dQ(layer:Int, nid:Int, dst_cid:Int):Double = {
+		q_dS(layer, nid, dst_cid) + q_dM(layer, nid, dst_cid) + q_dLXY(layer, nid, dst_cid)
 	}
 
-	def quick_dMLXY(layer:Int, nid:Int, dst_cid:Int):Double = {
-		quick_dSM(layer, nid, dst_cid)._2 + quick_dLXY(layer, nid, dst_cid)
+	def q_dMLXY(layer:Int, nid:Int, dst_cid:Int):Double = {
+		q_dM(layer, nid, dst_cid) + q_dLXY(layer, nid, dst_cid)
 	}
 
 	def alldMLXY(layer:Int, nid:Int) = {
 		val src_cid = nlabels(layer)(nid)
-		val dqsrc = quick_dMLXY(layer, nid, src_cid)
+		val dqsrc = q_dMLXY(layer, nid, src_cid)
 		val dQlist = 
 		if (!csizes(layer).contains(0)) {
-			for ((csize, cid) <- csizes(layer).zipWithIndex) yield quick_dMLXY(layer, nid, cid)
+			for ((csize, cid) <- csizes(layer).zipWithIndex) yield q_dMLXY(layer, nid, cid)
 		} else {
 			val emptycid = csizes(layer).indexOf(0)
-			val emptydQ = quick_dMLXY(layer, nid, emptycid)
-			for ((csize, cid) <- csizes(layer).zipWithIndex) yield {if (csize==0) emptydQ else quick_dMLXY(layer, nid, cid)}
+			val emptydQ = q_dMLXY(layer, nid, emptycid)
+			for ((csize, cid) <- csizes(layer).zipWithIndex) yield {if (csize==0) emptydQ else q_dMLXY(layer, nid, cid)}
 		}
 		dQlist.map{dq => dq - dqsrc}
 	}
@@ -246,7 +278,7 @@ class Graph extends KFinderGraph {
 			nlabels(layer)(nid)
 		else {
 			val dQpairlist = for ((csize, cid) <- csizes(layer).zipWithIndex if csize != 0)
-			 yield (cid, quick_dQ(layer, nid, cid))
+			 yield (cid, q_dQ(layer, nid, cid))
 			dQpairlist.minBy{_._2}._1
 		}
 	}
