@@ -42,7 +42,7 @@ object UFinder {
 		LXY
 	}
 
-	def Louvain(E:Seq[Seq[Int]]) = {
+	def Louvain(E:Seq[Seq[Int]]):Seq[Seq[Int]] = {
 		val g = new Graph()
 		g.updateE(E)
 		val g2 = new Graph()
@@ -127,7 +127,7 @@ class Graph extends KFinderGraph {
 		if (duplicated > 0) 
 			println(s"$duplicated edges removed")
 
-		val distinct_E = edgecount.keys.filter{e => e(0) != e(1)}.toSeq.sortWith{orderOFSeq}
+		val distinct_E = edgecount.keys.filter{e => e(0) != e(1)}.toSeq.sortWith{orderOfSeq}
 		val nnum = distinct_E.flatten.max+1
 		val init_nsize = Seq.fill(nnum)(1)
 		updateE_with_nsize(distinct_E, init_nsize)
@@ -144,7 +144,7 @@ class Graph extends KFinderGraph {
 				assert (ce_to_size(e, dtof(nsize)).product >= n)
 			}
 		}
-		this.E = E.map{_.sorted}.sortWith(orderOFSeq)
+		this.E = E.map{_.sorted}.sortWith(orderOfSeq)
 
 		this.k = 1
 		assert (this.E.map{_.length}.forall{_ == 2})

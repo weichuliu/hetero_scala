@@ -15,8 +15,14 @@ combiner
 make a entry point to run with args
 completed: ufinder, kfinder, hfinder
 split dS, dM
+do the all dmlxy in kf
 
 [next]
+merger.scala
+
+do the all dmlxy in uf
+
+
 modify the scalacombiner and scalahfinder's stdout.
 	print stderr on cmd and use some symbol to mark the result
 

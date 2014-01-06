@@ -68,7 +68,7 @@ class commonSuite extends FunSuite {
 		assert (nr == Seq(60, 60, 50))
 	}
 
-	test("subgraph_typefinder") {
+	test("subGraphTypeFinder") {
 		val E = readNet("nets/hetero.net")
 		val lr = Seq(187, 255, 408, 425)
 		val nr = Seq(60, 60, 50)
@@ -79,7 +79,7 @@ class commonSuite extends FunSuite {
 		}
 
 		assert (
-			E_list.map(subgraph_typefinder(_, nr)) == 
+			E_list.map(subGraphTypeFinder(_, nr)) == 
 			("uni", Seq(0, 0)) :: ("bi", Seq(0, 1)) :: ("uni", Seq(1, 1)) :: ("tri", Seq(0, 1, 2)) :: Nil
 			)
 	}

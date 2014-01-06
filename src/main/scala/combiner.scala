@@ -4,7 +4,7 @@ import collection.mutable.{Set => MSet, Map => MMap, Buffer}
 import common.Common._
 import common.Counter
 import common.KPartiteGraph
-import common.HFCommon.{retr_c, subgraph_typefinder, gen_E_from_C, gen_cofn_from_c, gen_nr_from_c}
+import common.HFCommon.{retr_c, subGraphTypeFinder, gen_E_from_C, gen_cofn_from_c, gen_nr_from_c}
 
 import newman.{Graph => SGraph}
 import muratabi.{Graph => BGraph}
@@ -164,7 +164,7 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 
 class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 	val global_E = E
-	val (gtype, layerinfo) = subgraph_typefinder(E, nr)
+	val (gtype, layerinfo) = subGraphTypeFinder(E, nr)
 	assert (Set("uni","bi","tri").contains(gtype))
 
 	// init a corresponding graph

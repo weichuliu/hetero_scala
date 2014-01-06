@@ -4,7 +4,6 @@ import common.Common._
 import common.Counter
 import common.HFCommon._
 import math.log
-import util.Random.{shuffle, nextInt => randint}
 import collection.mutable.{Set => MSet, Seq => MSeq, Buffer}
 
 object KFinder {
@@ -33,7 +32,7 @@ object KFinder {
 	def calc_LXY(cnt:Counter[Seq[Int]], csizes:(Int, Int)=>Int):Double = 
 		cnt.items.map{case(ce, cnt) => nCrln(ce_to_size(ce, csizes).product, cnt)}.sum
 
-	def Louvain(E:Seq[Seq[Int]]) = {
+	def Louvain(E:Seq[Seq[Int]]):Seq[Seq[Seq[Int]]] = {
 		val g = new Graph()
 		g.updateE(E)
 		val g2 = new Graph()
@@ -117,7 +116,7 @@ class Graph extends KFinderGraph {
 			println(s"$duplicated edges removed")
 
 
-		val distinct_E = edgecount.keys.toSeq.sortWith{orderOFSeq}
+		val distinct_E = edgecount.keys.toSeq.sortWith{orderOfSeq}
 		val nnums = distinct_E.transpose.map{_.max+1}
 		val init_nsizes = nnums.map{nnum => Seq.fill(nnum)(1)}
 		updateE_with_nsizes(distinct_E, init_nsizes)
@@ -131,7 +130,7 @@ class Graph extends KFinderGraph {
 				if (ce_to_size(e, dtof(nsizes)).product < n)
 					assert (false)
 		}
-		this.E = E.sortWith(orderOFSeq)
+		this.E = E.sortWith(orderOfSeq)
 
 		this.k = this.E(0).length
 		assert (this.E.map{_.length}.forall{_ == this.k})
@@ -164,7 +163,7 @@ class Graph extends KFinderGraph {
 				c => c.map{nid => this.nsizes(layer)(nid)}.sum
 				}}.map{MSeq(_:_*)}
 
-		this.CE_cnt = Counter(E_to_CE(this.E, dtof(this.nlabels)))
+		this.CE_cnt = Counter(E_to_CE(this.E, dtof(this.nlabels)):_*)
 	}
 
 	def Q:Double = (_S + _M + _LXY) / log(2)

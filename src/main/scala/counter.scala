@@ -51,11 +51,7 @@ class Counter[T] {
 object Counter {
 	def apply() = new Counter[Nothing]
 
-	def apply[T](l: Iterable[T]):Counter[T] =  {
-		val nc = new Counter[T]()
-		for (i <- l) nc.add(i)
-		nc
-	}
+	// def apply[T](l: Seq[T]):Counter[T]
 
 	def apply[T](ic: Counter[T]):Counter[T] = {
 		val nc = new Counter[T]()
@@ -69,5 +65,9 @@ object Counter {
 		nc
 	}
 
-	def apply[T](l: T*):Counter[T] = Counter[T](l.toList)
+	def apply[T](l: T*):Counter[T] = {
+		val nc = new Counter[T]()
+		for (i <- l) nc.add(i)
+		nc
+	}
 }

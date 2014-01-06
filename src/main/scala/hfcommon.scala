@@ -58,9 +58,9 @@ object HFCommon {
 		}
 	}
 
-	def orderOFSeq(A:Seq[Int], B:Seq[Int]):Boolean = {
+	def orderOfSeq(A:Seq[Int], B:Seq[Int]):Boolean = {
 		if (A.length == 1 || B.length == 1 || A(0) != B(0)) A(0) < B(0)
-		else orderOFSeq(A.tail, B.tail)
+		else orderOfSeq(A.tail, B.tail)
 	}
 
 	def retr_c(lc:Seq[Seq[Int]], cofc:Seq[Seq[Int]]) = {
@@ -90,7 +90,7 @@ object HFCommon {
 
 	// Below: copy from Combiner
 
-	def subgraph_typefinder(E:Seq[Seq[Int]], nr:Seq[Int]):(String, Seq[Int]) = {
+	def subGraphTypeFinder(E:Seq[Seq[Int]], nr:Seq[Int]):(String, Seq[Int]) = {
 		if (E.length == 0) {System.err.println("empty subgraph E"); assert(false)}
 
 		val node_to_layer = belongJudger(nr)

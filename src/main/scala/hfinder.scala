@@ -15,6 +15,43 @@ object HFinder {
 		("bi" -> new KGraph ),
 		("tri" -> new KGraph )
 	)
+	def Louvain_withnsize(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
+		val hg = new HGraph(E, lr, nr)
+		var l2loop = -1
+		while (l2loop != 1) {
+			// println(s"hg.HQ:${hg.HQ} => ......")
+			hg.minimizeQ()
+			// println(hg.HQ)
+			// println("merge")
+			val clist = hg.c_result
+			val newnr = gen_nr_from_c(hg.nr, clist)
+			val newlr = hg.lr
+			val newE = gen_E_from_C(hg.E_list.flatten, clist)
+			val fs = hg.nsizes.flatten
+			val newnsize = clist.map{_.map{fs(_)}.sum}
+			val newnsizes = rangeToPair(newnr).map{
+				case b::u::Nil => newnsize.slice(b,u)
+				case _ => {assert(false);List()}
+			}
+			val hg2 = new HGraph(newE, newlr, 
+				newnr, newnsizes.map{x=>MSeq(x:_*)})
+			// println("hg2.HQ:${hg2.HQ} => ......")
+			l2loop = hg2.minimizeQ()
+			// println(hg2.HQ)
+			// println("Unpack")
+			val retc = retr_c(hg.c_result, hg2.c_result)
+			val old_cr = gen_nr_from_c(hg.nr, retc)
+			val n_empty_c = for ((x, y) <- (hg.nr, old_cr).zipped) yield (x - y)
+
+			val retc_l = (n_empty_c, rangeToPair(old_cr)).zipped.map {
+				case (x, b :: u :: Nil) => retc.slice(b,u) ++ Seq.fill(x)(Seq[Int]())
+				case _ => {assert(false);Seq()}
+			}
+			val retc_flat = retc_l.flatten.toSeq
+			hg.updateC(retc_flat)
+		}
+		hg.c_list.filter{!_.isEmpty}
+	}
 
 	def Louvain(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
 		val hg = new HGraph(E, lr, nr)
@@ -64,14 +101,14 @@ object HFinder {
 	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Seq[Seq[Int]] = {
 		// input subE, return distinct_E
 		if (u == true) {
-			val distinct_E = E.map{_.sorted}.filter{e=>e(0)!=e(1)}.distinct.sortWith(orderOFSeq)
+			val distinct_E = E.map{_.sorted}.filter{e=>e(0)!=e(1)}.distinct.sortWith(orderOfSeq)
 			val rm_edge = distinct_E.length - E.length
 			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
 			distinct_E
 		}
 
 		else { 
-			val distinct_E = E.distinct.sortWith(orderOFSeq)
+			val distinct_E = E.distinct.sortWith(orderOfSeq)
 			val rm_edge = distinct_E.length - E.length
 			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
 			distinct_E
@@ -96,7 +133,7 @@ object HFinder {
 					}
 				}
 			}
-			val distinct_E = E.map{_.sorted}.sortWith(orderOFSeq)
+			val distinct_E = E.map{_.sorted}.sortWith(orderOfSeq)
 			distinct_E
 		} 
 
@@ -109,7 +146,7 @@ object HFinder {
 						assert(false)
 					}
 
-			val distinct_E = E.sortWith(orderOFSeq)
+			val distinct_E = E.sortWith(orderOfSeq)
 			distinct_E
 		}
 	}
@@ -124,12 +161,12 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 	if (nsizes.isEmpty) {
 		rangeToPair(_lr).map{case Seq(base, upper) =>
 			preprocessE(E.slice(base, upper), 
-						subgraph_typefinder(E.slice(base, upper), nr)._1=="uni")
+						subGraphTypeFinder(E.slice(base, upper), nr)._1=="uni")
 		}
 	} else {
 		rangeToPair(_lr).map{case Seq(base, upper) =>
 			checkE(E.slice(base, upper),
-					subgraph_typefinder(E.slice(base, upper), nr)._1=="uni",
+					subGraphTypeFinder(E.slice(base, upper), nr)._1=="uni",
 					nsizes)
 		}
 	}
@@ -168,7 +205,7 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 		val dqlist = (for ((ds, dmlxys) <- (alldS, alldmlxys.transpose).zipped) yield {ds + dmlxys.sum})
 
 		val mindQ = dqlist.min
-		if (mindQ >= 0)
+		if (mindQ >= -1e-6)
 			c_list.indexWhere(_.contains(gnid))
 		else {
 			val lcid = dqlist.toSeq.indexOf(mindQ)
@@ -181,6 +218,16 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 		var looped = 0
 		var moved = -1
 		while (moved != 0) {
+			// debug
+			// if (looped == 100) {
+			// 	val timestamp = (new java.util.Date).toString.replace(":","_").replace(" ","_")
+			// 	saveNet(E_list.flatten, timestamp+"_dbg_hnet.net")
+			// 	saveNet(Seq(lr, nr), timestamp+"_dbg_meta")
+			// 	saveNet(nsizes, timestamp+"_dbg_nsizes")
+			// 	saveNet(c_list, timestamp+"_dbg_clist")
+			// 	assert(false)
+			// }
+			// debug
 			looped += 1
 			var node_picker = _rannseq(nr.sum)
 			moved = 0
@@ -230,7 +277,7 @@ class HGraph(E:Seq[Seq[Int]], _lr:Seq[Int], val nr:Seq[Int], _nsizes:Seq[MSeq[In
 
 class SubGraph(E:Seq[Seq[Int]], nr:Seq[Int], nsizes:Seq[MSeq[Int]] = Seq()) {
 	val global_E = E
-	val (gtype, layerinfo) = subgraph_typefinder(E, nr)
+	val (gtype, layerinfo) = subGraphTypeFinder(E, nr)
 	assert (Set("uni","bi","tri").contains(gtype))
 
 	// init a corresponding graph
