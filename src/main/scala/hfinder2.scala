@@ -76,7 +76,7 @@ object HFinder2 {
 			println("g2 after ", g2.HQ)
 			val retc = retr_c(g1.gen_clist, g2.gen_clist)
 			g1.updateC(retc)
-			println("----------------------")
+			println("......................")
 			g1.gen_clist.filter{!_.isEmpty}.map{_.sorted}.sortWith(orderOfSeq)
 		}
 		g1.gen_clist
@@ -149,6 +149,7 @@ class HGraph2 {
 	var cr:Seq[Int] = Seq.empty[Int] // only change in updateC
 	var csize:Buffer[Int] = Buffer.empty[Int]
 	var CE_cnt:Counter[Seq[Int]] = Counter()
+	var cache_cntrs:Seq[Counter[Seq[Int]]] = Seq.empty[Counter[Seq[Int]]]
 
 	def readfolder(hfolder:String) {
 		val _E = readNet(hfolder + "/hetero.net")
@@ -211,6 +212,12 @@ class HGraph2 {
 
 		csize = clist.map{_.map{nsize(_)}.sum}.toBuffer
 		CE_cnt = Counter(E_to_CE(E, nlabel):_*)
+
+		val allclnk = (0 until cr.sum).map{i => Counter[Seq[Int]]()}
+		for ((ce, cnt) <- CE_cnt.items; c <- ce.distinct) {
+			allclnk(c).add(ce, cnt)
+		}
+		cache_cntrs = allclnk
 	}
 
 	def _gennlinks(E:Seq[Seq[Int]], nr:Seq[Int]) = {
@@ -269,6 +276,14 @@ class HGraph2 {
 		val new_clnk = Counter(E_to_CE(lnks, nlabel):_*)
 		CE_cnt.subCounter(old_clnk)
 		CE_cnt.addCounter(new_clnk)
+
+		for ((ec, cnt) <- old_clnk.items; c <- ec.distinct) {
+			cache_cntrs(c).sub(ec, cnt)
+		}
+		for ((ec, cnt) <- new_clnk.items; c <- ec.distinct) {
+			cache_cntrs(c).add(ec, cnt)
+		}
+		
 	}
 
 	def alldQ(nid:Int) = {
@@ -326,17 +341,45 @@ class HGraph2 {
 			val newlabel = nlabel.toBuffer // copy the whole nlabel
 			val alldlxy = Buffer[Double]()
 			val newsize = csize.toBuffer
+			var dlxy_emptyc:Option[Double] = None
 			newsize(src_cid) -= nsz
+
+			val src_clnk = cache_cntrs(src_cid)
+
 			for (dst_cid <- dst_b until dst_u) {
-				newlabel(nid) = dst_cid
-				val n_clnks_dst = Counter(E_to_CE(lnks, newlabel):_*)
-				val clnk = Counter(CE_cnt.items.filter{
-							case (ce, cnt) => ce.contains(src_cid) || ce.contains(dst_cid)})
-				newsize(dst_cid) += nsz
-				val o_LXY = calc_LXY(clnk, csize)
-				val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newsize)
-				newsize(dst_cid) -= nsz
-				alldlxy.append(n_LXY - o_LXY)
+				if (csize(dst_cid) == 0 && !dlxy_emptyc.isEmpty) {
+					alldlxy.append(dlxy_emptyc.get)
+				}
+				else {
+					newlabel(nid) = dst_cid
+					val n_clnks_dst = Counter(E_to_CE(lnks, newlabel):_*)
+					val dst_clnk = cache_cntrs(dst_cid)
+					// val cclnk = Counter(CE_cnt.items.filter{
+					// 			case (ce, cnt) => ce.contains(src_cid) || ce.contains(dst_cid)})
+					val clnk = if (src_cid == dst_cid) (src_clnk)
+						else {
+							val _clnk = src_clnk + dst_clnk
+							val e = Seq(src_cid, dst_cid).sorted
+							if (_clnk.contains(e)){
+								assert (_clnk(e) % 2 == 0)
+								_clnk.sub(e, _clnk(e) / 2)
+							}
+							_clnk
+						}
+					// println(clnk)
+					// println(cclnk)
+					// assert (clnk == cclnk)
+
+
+					newsize(dst_cid) += nsz
+					val o_LXY = calc_LXY(clnk, csize)
+					val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newsize)
+					newsize(dst_cid) -= nsz
+					if (csize(dst_cid) == 0)
+						dlxy_emptyc = Some(n_LXY - o_LXY)
+					alldlxy.append(n_LXY - o_LXY)
+				}
+
 			}
 			alldlxy
 		}

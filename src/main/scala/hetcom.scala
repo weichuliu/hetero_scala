@@ -2,6 +2,7 @@ package hetcom
 
 import combiner.Combiner.FastUnfolding
 import hfinder.HFinder.Louvain
+import hfinder2.HFinder2.{Louvain => Louvain2}
 import common.Common.printNet
 import System.err.{println => perr}
 
@@ -17,7 +18,7 @@ object hetcom {
 	def main(args: Array[String]): Unit = {
 		if (args.length != 3) {
 			perr(errinfo)
-		} else if (!Seq("cm", "hf").contains(args(0))) {
+		} else if (!Seq("cm", "hf", "hf2").contains(args(0))) {
 			perr(errinfo)
 		} else {
 			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
@@ -31,10 +32,11 @@ object hetcom {
 
 
 			val result:Seq[Seq[Int]] = 
-			if (args(0) == "cm")
-				FastUnfolding(E, lr, nr)
-			else
-				Louvain(E, lr, nr)
+			args(0) match {
+				case "cm" => FastUnfolding(E, lr, nr)
+				case "hf" => Louvain(E, lr, nr)
+				case "hf2" => Louvain2(E, lr, nr)
+			}
 
 			println("------")
 			printNet(result)

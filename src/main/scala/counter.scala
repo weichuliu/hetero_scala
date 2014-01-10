@@ -46,6 +46,8 @@ class Counter[T] {
 		case (other: Counter[T]) => this.toMap.equals(other.toMap)
 		case _ => false
 	}
+
+	def contains(i:T) = cntr.contains(i)
 }
 
 object Counter {
