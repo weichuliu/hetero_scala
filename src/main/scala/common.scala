@@ -60,24 +60,24 @@ object Common {
 
 	def rangeToPair(rnglist: Seq[Int]): Seq[Seq[Int]] = {
 		// rangeToPair(Seq(10,5,10)) ---> Seq(Seq(0, 10), Seq(10, 15), Seq(15, 25))
-	    var base = 0
-	    val r_pair = MSeq.fill(rnglist.length)(Seq[Int]())
-	    for ((rng, i) <- rnglist.zipWithIndex) {
-	        val upper = base + rng
-	        r_pair(i) = Seq(base, upper)
-	        base = upper
-	    }
-	    return r_pair.toSeq
+		var base = 0
+		val r_pair = MSeq.fill(rnglist.length)(Seq[Int]())
+		for ((rng, i) <- rnglist.zipWithIndex) {
+			val upper = base + rng
+			r_pair(i) = Seq(base, upper)
+			base = upper
+		}
+		return r_pair.toSeq
 	}
 
 	def belongJudger(rnglist: Seq[Int]): Int => Int = {
-	    val pairlist = rangeToPair(rnglist)
-	    def belongTo(a: Int):Int = {
-	        val index = pairlist indexWhere {p => p(0) <= a && a < p(1)}
-	        assert(index != -1)
-	        index
-	    }
-	    belongTo
+		val pairlist = rangeToPair(rnglist)
+		def belongTo(a: Int):Int = {
+			val index = pairlist indexWhere {p => p(0) <= a && a < p(1)}
+			assert(index != -1)
+			index
+		}
+		belongTo
 	}
 
 	def gennodeseq(bypass:Int, ns:Int*) = {

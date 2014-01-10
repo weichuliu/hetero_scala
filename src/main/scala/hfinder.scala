@@ -8,6 +8,7 @@ import kfinder.{Graph => KGraph}
 import math.log
 import System.err.{println => perr}
 import collection.mutable.{Seq=>MSeq, Map=>MMap, Buffer}
+import hfinder2.HFinder2.{preprocessE, checkE}
 
 object HFinder {
 	def graphinitdict:Map[String,KFinderGraph] = Map(
@@ -96,59 +97,6 @@ object HFinder {
 		val (lr, nr) = lrnr(folder + "/.meta")
 		Louvain(E, lr, nr)
 
-	}
-
-	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Seq[Seq[Int]] = {
-		// input subE, return distinct_E
-		if (u == true) {
-			val distinct_E = E.map{_.sorted}.filter{e=>e(0)!=e(1)}.distinct.sortWith(orderOfSeq)
-			val rm_edge = distinct_E.length - E.length
-			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
-			distinct_E
-		}
-
-		else { 
-			val distinct_E = E.distinct.sortWith(orderOfSeq)
-			val rm_edge = distinct_E.length - E.length
-			if (rm_edge > 0) {println(s"${rm_edge} edges removed")}
-			distinct_E
-		}
-	}
-
-	def checkE(E:Seq[Seq[Int]], u:Boolean, nsizelist:Seq[Seq[Int]]):Seq[Seq[Int]] = {
-		val nsizes = nsizelist.flatten
-		if (u == true) {
-			val edgecount = Counter(E.map{_.sorted}:_*)
-			for ((e, n) <- edgecount.items) {
-				if (e(0) == e(1)) {
-					val s = nsizes(e(0))
-					if (s * (s - 1) / 2 < n) {
-						perr(s"the self-loop $e in size $s node cnts $n")
-						assert(false)
-					}
-				} else if (n > 1) {
-					if (e.map{nsizes(_)}.product < n) {
-						perr(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
-						assert(false)
-					}
-				}
-			}
-			val distinct_E = E.map{_.sorted}.sortWith(orderOfSeq)
-			distinct_E
-		} 
-
-		else {
-			val edgecount = Counter(E:_*)
-			for ((e, n) <- edgecount.items)
-				if (n > 1)
-					if (e.map{nsizes(_)}.product < n) {
-						perr(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
-						assert(false)
-					}
-
-			val distinct_E = E.sortWith(orderOfSeq)
-			distinct_E
-		}
 	}
 }
 
