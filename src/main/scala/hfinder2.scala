@@ -8,7 +8,6 @@ import System.err.{println => perr}
 import collection.mutable.{Seq=>MSeq, Map=>MMap, Buffer}
 
 object HFinder2 {
-
 	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Seq[Seq[Int]] = {
 		// input subE, return distinct_E
 		if (u == true) {
@@ -123,7 +122,7 @@ object HFinder2 {
 			val s = csize(ce(0))
 			s * (s - 1) / 2
 		} else {
-			ce.map{csize(_)}.product
+			ce.view.map{csize(_)}.product
 		}
 	}
 			
@@ -147,7 +146,7 @@ class HGraph2 {
 	var nlabel:MSeq[Int] = MSeq.empty[Int]
 	var layer_cnum:MSeq[Int] = MSeq.empty[Int]
 	var cr:Seq[Int] = Seq.empty[Int] // only change in updateC
-	var csize:Buffer[Int] = Buffer.empty[Int]
+	var csize:MSeq[Int] = MSeq.empty[Int]
 	var CE_cnt:Counter[Seq[Int]] = Counter()
 	var cache_cntrs:Seq[Counter[Seq[Int]]] = Seq.empty[Counter[Seq[Int]]]
 
@@ -210,7 +209,7 @@ class HGraph2 {
 		layer_cnum = _layer_cnum
 		cr = _cr
 
-		csize = clist.map{_.map{nsize(_)}.sum}.toBuffer
+		csize = MSeq[Int]() ++ clist.map{_.map{nsize(_)}.sum}
 		CE_cnt = Counter(E_to_CE(E, nlabel):_*)
 
 		val allclnk = (0 until cr.sum).map{i => Counter[Seq[Int]]()}
@@ -338,11 +337,11 @@ class HGraph2 {
 			// waiting for sorted (CE_cnt) optimization
 			val lnks = _nlinks(nid).map{E(_)}
 			val n_clnks_src = Counter(E_to_CE(lnks, nlabel):_*)
-			val newlabel = nlabel.toBuffer // copy the whole nlabel
+			val newlabel = nlabel.clone // copy the whole nlabel
 			val alldlxy = Buffer[Double]()
-			val newsize = csize.toBuffer
+			val newcsize = csize.clone
 			var dlxy_emptyc:Option[Double] = None
-			newsize(src_cid) -= nsz
+			newcsize(src_cid) -= nsz
 
 			val src_clnk = cache_cntrs(src_cid)
 
@@ -371,10 +370,10 @@ class HGraph2 {
 					// assert (clnk == cclnk)
 
 
-					newsize(dst_cid) += nsz
 					val o_LXY = calc_LXY(clnk, csize)
-					val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newsize)
-					newsize(dst_cid) -= nsz
+					newcsize(dst_cid) += nsz
+					val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newcsize)
+					newcsize(dst_cid) -= nsz
 					if (csize(dst_cid) == 0)
 						dlxy_emptyc = Some(n_LXY - o_LXY)
 					alldlxy.append(n_LXY - o_LXY)
@@ -404,9 +403,13 @@ class HGraph2 {
 	def gen_csize = gen_clist.map{_.map{n => nsize(n)}.sum}
 
 	def minimizeQ() = {
+		// debug
+		var startt = System.currentTimeMillis
+		// debug
 		var looped = 0
 		var moved = -1
-		while (moved != 0) {
+
+		while (moved == -1) {
 			var node_picker = _rannseq(nr.sum)
 			moved = 0
 			for (nextnode <- node_picker) {
@@ -414,13 +417,31 @@ class HGraph2 {
 				val argmin_cid = calc_argmin_c(nid)
 				if (argmin_cid != nlabel(nid)) {
 					moved += 1
+					// debug
+					// if (moved % 100 == 0){
+					// 	val endt = System.currentTimeMillis
+					// 	println(s"time used ${endt - startt}")
+					// 	startt = endt
+					// 	println(s"moved, $moved")
+					// }
+					// if (moved % 500 == 0){
+					// 	val endt = System.currentTimeMillis
+					// 	println("remove null c")
+					// 	val cls = label_to_clist(nlabel).filter{!_.isEmpty}
+					// 	saveNet(cls, "2500/temp"+endt.toString)
+					// 	println(s"cls.len is ${cls.length}")
+					// 	println("HQ", HQ)
+					// 	updateC(cls)
+					// }
+					// debug
 					move_node(nid, argmin_cid)
 				}
 			}
-			if (moved == 0) {
-				val cls = label_to_clist(nlabel).filter{!_.isEmpty}
-				updateC(cls)
-			} else {
+			// after a loop, clear null c
+			val cls = label_to_clist(nlabel).filter{!_.isEmpty}.map{_.sorted}.sortBy(_(0))
+			updateC(cls)
+			// if moved bigger than threshold, reset moved
+			if (moved > 5) {
 				node_picker = _rannseq(nr.sum)
 				looped += 1
 				moved = -1
@@ -429,11 +450,4 @@ class HGraph2 {
 		}
 		looped
 	}
-
-
-
-
-
-
-
 }

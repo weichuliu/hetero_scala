@@ -84,6 +84,17 @@ class commonSuite extends FunSuite {
 			)
 	}
 
+	test("retr_c test") {
+		val lc = Seq(Seq(0,5),Seq(10,15),Seq(20,25),Seq(30,35))
+		val cofc = Seq(Seq(0,3),Seq(1,2))
+		val label = Seq[Int](0, 1, 2, 0, 1, 1, 1, 1, 1, 3, 0, 1, 4, 1, 0, 5, 3, 1, 1, 3, 1, 0, 2, 3, 6, 6, 6, 0, 0, 0, 6, 2, 6, 3)
+		val csizes = Seq(Seq(3, 3, 3, 4, 2, 5, 2, 2, 3, 2, 2, 4, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 4), Seq(3, 3, 2, 2, 3, 3, 5, 2, 2, 2, 2, 6, 3, 4, 2, 5, 2, 4, 3, 2), Seq(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 2, 3, 2, 2, 3, 2, 3, 2, 2))
+		// val nlabels = csizes.map{}
+		assert(retr_c(lc, cofc) == Seq(Seq(0, 5, 30, 35), Seq(10, 15, 20, 25)))
+		assert(label == clist_to_label(label_to_clist(label)))
+
+	}
+
 	// test("gennodeseq reset test") {
 	// 	val (p, r) = gennodeseq(bypass = 10, 50, 5)
 	// 	p()
