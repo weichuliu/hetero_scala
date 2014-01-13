@@ -16,23 +16,10 @@ object hetmain {
 			"result output through stdout after ------"
 			).mkString("\r\n")
 
-	// def main(args: Array[String]): Unit = {
-	// 	println("hello, testing!")
-	// 	println("Not the real main")
-	// 	println(args.length)
-	// 	val hfolder = args(0)
-	// 	import hfinder2.HFinder2.fnLouvain
-	// 	val temp = fnLouvain(hfolder)
-	// 	printNet(temp)
-	// }
-	
-
 	def main(args: Array[String]): Unit = {
-		if (args.length != 3) {
+		if (args.length == 0 || !Seq("cm", "hf", "hf2", "hack").contains(args(0)) ) {
 			perr(errinfo)
-		} else if (!Seq("cm", "hf", "hf2").contains(args(0))) {
-			perr(errinfo)
-		} else {
+		} else if (Seq("cm","hf","hf2") contains args(0)) {
 			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
 			val lrstr = args(1)
 			val nrstr = args(2)
@@ -52,6 +39,24 @@ object hetmain {
 
 			println("------")
 			printNet(result)
+		} else {
+			assert(args(0) == "hack")
+			val hfolder = args(1)
+			println("welcome, commander")
+
+			import java.nio.file.{Files, Paths}
+			val np = Paths.get(hfolder+"/hetero.net")
+			val mp = Paths.get(hfolder+"/.meta")
+			if (Seq(np, mp).forall { path =>
+					if (!Files.isRegularFile(path))
+						println(s"can not find $path, over")
+				Files.isRegularFile(path)
+			}) {
+				import hfinder2.HFinder2.fnLouvain
+				val temp = fnLouvain(hfolder)
+				printNet(temp)
+			}
+
 		}
 	}
 }

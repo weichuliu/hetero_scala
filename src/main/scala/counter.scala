@@ -1,8 +1,7 @@
 package common
 import collection.mutable.{Map => MMap}
 
-class Counter[T] {
-	val cntr:MMap[T,Int] = MMap()
+class Counter[T] (private val cntr:MMap[T,Int] = MMap[T, Int]()) {
 	override def toString() = {cntr.toString.replaceFirst("Map", "Counter")}
 	def apply(i:T) = if (cntr.contains(i)) cntr(i) else 0
 	def toMap = cntr.toMap
@@ -13,8 +12,12 @@ class Counter[T] {
 	def values = cntr.values
 	def max:T = cntr.maxBy(_._2)._1
 	def maxitem:(T,Int) = cntr.maxBy(_._2)
+	override def clone:Counter[T] = {
+		new Counter[T](cntr.clone)
+	}
 
 	def clear() {cntr.clear()}
+	def remove(i:T) {cntr.remove(i)}
 	def add(i:T, w:Int=1) {cntr(i) = if (cntr.contains(i)) cntr(i) + w else w}
 	def sub(i:T, w:Int=1) {
 		cntr(i) -= w
@@ -31,19 +34,19 @@ class Counter[T] {
 	}
 
 	def + (ic: Counter[T]):Counter[T] = {
-		val nc = Counter[T](this)
+		val nc = this.clone
 		nc.addCounter(ic)
 		nc
 	}
 
 	def - (ic: Counter[T]):Counter[T] = {
-		val nc = Counter[T](this)
+		val nc = this.clone
 		nc.subCounter(ic)
 		nc
 	}
 
 	override def equals(other: Any): Boolean = other match {
-		case (other: Counter[T]) => this.toMap.equals(other.toMap)
+		case (other: Counter[T]) => this.cntr.equals(other.cntr)
 		case _ => false
 	}
 
@@ -56,9 +59,7 @@ object Counter {
 	// def apply[T](l: Seq[T]):Counter[T]
 
 	def apply[T](ic: Counter[T]):Counter[T] = {
-		val nc = new Counter[T]()
-		for ((i, n) <- ic.cntr) nc.add(i, n)
-		nc
+		new Counter[T](ic.cntr.clone)
 	}
 
 	def apply[T](it: Iterator[(T, Int)]) = {

@@ -18,22 +18,39 @@ split dS, dM
 do the all dmlxy in kf
 java run scala: java -cp scala-library.jar;. hetcom.hetmain
 merger.scala
-
-[next]
-mergec! mergec! mergec!
+MERGEC! MERGEC! MERGEC!: PYVER CHECK IF ITS OK DO SCALA
+to cache_lxy: size change: src to 0, dst to s+d. all edges passing through them are changed. all c in throught edges need recalc
+PAR CALC: not doing it
 test alldq
 test mergeq
 use dlxy - ds, dm
-mod ds, dm
-
 write dQ_merge
 write FU instead of pack-unpack
 try  1.not to use dtof to see if it's being faster (or in pyver use cProfile)
 try  2.sort CE_cnt to calc dQlist?
-try  3.only calculate adjacent node
-add view in scala ver
 optimize speed: round loop and merge
 
+[next]
+balance accuracy and speed:
+	mod definition of M
+	minimize method - mix merge and move:
+		by loop
+		inside loop
+		move after merge
+		half/quarter loop
 
+report:
+	bipartite
+	real data visual
+	bigger tripartite
+	try merger version of hfinder? // parallel subgraph calc may solve to few cmus
 
-
+package:
+	multimain objects in one package
+	java -cp hetcom.jar {package}.{object} ...(parameters)
+	
+be faster:
+	not to calc whole newclnk, use cache_lxy to get src part, twice faster
+	try  3.only calculate adjacent node
+	do a profile?
+	maybe mod trinetfinder
