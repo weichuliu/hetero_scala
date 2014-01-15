@@ -9,12 +9,12 @@ import util.Random.{shuffle, nextInt => randint}
 object Common {
 	// def flatten_list(lst): scala builtin flatten
 	def readNet(fn: String):Seq[Seq[Int]] = {
-		def strToList(S: String): Seq[Int] = {
-			// "1 2 3" ---> List(1, 2, 3)
+		def strToSeq(S: String): Seq[Int] = {
+			// "1 2 3" ---> Seq(1, 2, 3)
 			S.split(" ") map {_.toInt}
 		}
 		val f = fromFile(fn)
-		val net = f.getLines.toVector map strToList
+		val net = f.getLines.toVector map strToSeq
 		f.close()
 		net
 	}
@@ -33,7 +33,7 @@ object Common {
 	}
 
 	def lrnr(metafn:String):(Seq[Int], Seq[Int]) = {
-		def metaToList(s:String) = {
+		def metaToSeq(s:String) = {
 			val l = s.indexOf("[")
 			val r = s.indexOf("]")
 			s.slice(l+1, r).split(", ").map{_.toInt}.toSeq
@@ -47,7 +47,7 @@ object Common {
 		assert (lrstr.startsWith("lr = "))
 		assert (nrstr.startsWith("nr = "))
 
-		return (metaToList(lrstr), metaToList(nrstr))
+		return (metaToSeq(lrstr), metaToSeq(nrstr))
 
 
 	}
@@ -58,13 +58,13 @@ object Common {
 		nseq.toIterator
 	}
 
-	def rangeToPair(rnglist: Seq[Int]): Seq[Seq[Int]] = {
-		// rangeToPair(Seq(10,5,10)) ---> Seq(Seq(0, 10), Seq(10, 15), Seq(15, 25))
+	def rangeToPair(rnglist: Seq[Int]): Seq[(Int, Int)] = {
+		// rangeToPair(Seq(10,5,10)) ---> Seq((0, 10), (10, 15), (15, 25))
 		var base = 0
-		val r_pair = MSeq.fill(rnglist.length)(Seq[Int]())
+		val r_pair = Buffer.empty[(Int, Int)]
 		for ((rng, i) <- rnglist.zipWithIndex) {
 			val upper = base + rng
-			r_pair(i) = Seq(base, upper)
+			r_pair append((base, upper))
 			base = upper
 		}
 		return r_pair.toSeq
@@ -73,7 +73,7 @@ object Common {
 	def belongJudger(rnglist: Seq[Int]): Int => Int = {
 		val pairlist = rangeToPair(rnglist)
 		def belongTo(a: Int):Int = {
-			val index = pairlist indexWhere {p => p(0) <= a && a < p(1)}
+			val index = pairlist indexWhere {p => p._1 <= a && a < p._2}
 			assert(index != -1)
 			index
 		}

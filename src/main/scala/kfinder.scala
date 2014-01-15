@@ -91,7 +91,7 @@ class Graph extends KFinderGraph {
 	var ntotalsize:Seq[Int] = Seq()
 	var _nlinks:Seq[Seq[Seq[Int]]] = Seq()
 
-	var cnums:MSeq[Int] = Array[Int]()
+	var cnums:MSeq[Int] = MSeq[Int]()
 	var nlabels:Seq[MSeq[Int]] = Seq()
 	var csizes:Seq[MSeq[Int]] = Seq()
 

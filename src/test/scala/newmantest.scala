@@ -36,6 +36,6 @@ class newmanSuite extends FunSuite {
 			))
 		assert (pg.calcdq(0, 0, 45) == 0.0052046097972489914)
 		assert (pg.calcdq(0, 0, 10) == -0.0002859675712774171)
-		pg.uC(List(result))
+		pg.uC(Seq(result))
 	}
 }

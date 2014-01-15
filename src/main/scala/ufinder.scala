@@ -282,7 +282,7 @@ class Graph extends KFinderGraph {
 			val clnk = Counter(CE_cnt.items.filter{
 						case (ce, cnt) => ce.contains(src_cid) || ce.contains(dst_cid)})
 			val o_LXY = calc_LXY(clnk, dtof(csize))
-			val newsize = csize.toArray
+			val newsize = csize.clone
 			newsize(src_cid) -= nsz
 			newsize(dst_cid) += nsz
 			val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, dtof(newsize))

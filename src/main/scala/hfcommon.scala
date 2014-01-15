@@ -80,7 +80,7 @@ object HFCommon {
 
 	def clist_to_label(clist:Seq[Seq[Int]]):MSeq[Int] = {
 		val nnum = clist.flatten.max + 1
-		val label:MSeq[Int] = Array.fill(nnum)(-1)
+		val label:MSeq[Int] = MSeq.fill(nnum)(-1)
 		for ((c, cid) <- clist.zipWithIndex; nid <- c) {
 			label(nid) = cid
 		}
@@ -122,13 +122,13 @@ object HFCommon {
 	    val c_of_n = gen_cofn_from_c(C)
 	    val l_of_n = belongJudger(nr)
 		
-	    val new_nr = new Array[Int](nr.length)
+	    val new_nr = MSeq.fill(nr.length)(0)
 	    for (c <- C) {
 	    	val l = c.map{l_of_n(_)}.distinct
 	    	assert (l.length == 1)
 	    	new_nr(l.head) += 1
 	    }
-	    new_nr.toList		
+	    new_nr.toSeq
 	}
 	
 }

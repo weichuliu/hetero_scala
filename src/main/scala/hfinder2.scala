@@ -1,4 +1,4 @@
-package hfinder2
+package hfinder
 
 import common.Common._
 import common.Counter
@@ -7,7 +7,7 @@ import math.log
 import System.err.{println => perr}
 import collection.mutable.{Seq => MSeq, Set => MSet, Map => MMap, Buffer}
 
-object HFinder2 {
+object HFinder {
 	def preprocessE(E:Seq[Seq[Int]], u:Boolean):Seq[Seq[Int]] = {
 		// input subE, return distinct_E
 		if (u == true) {
@@ -62,8 +62,8 @@ object HFinder2 {
 	}
 
 	def Louvain(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
-		val g1 = new HGraph2()
-		val g2 = new HGraph2()
+		val g1 = new HGraph()
+		val g2 = new HGraph()
 		g1.update(E, lr, nr)
 		var l = 1
 		while (l != 0) {
@@ -88,7 +88,7 @@ object HFinder2 {
 	}
 
 	def FU(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int], nsize:Option[Seq[Int]] = None):Seq[Seq[Int]] = {
-		val g = new HGraph2()
+		val g = new HGraph()
 		g.update(E, lr, nr, nsize)
 		val l = g.minimizeQ()
 		if (l == 0) {
@@ -108,7 +108,7 @@ object HFinder2 {
 	}
 
 	def QFU(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
-		val g = new HGraph2()
+		val g = new HGraph()
 		g.update(E, lr, nr)
 		println(g.HQ)
 		var (l, l2) = (-1, -1)
@@ -127,9 +127,12 @@ object HFinder2 {
 	}
 
 	def divide[T](lst:Seq[T], rnglist:Seq[Int]) = {
+		// lst: Seq[T](a, b, c, d, e, f)
+		// rnglist: Seq(1,3,2)
+		// return Seq[Seq[T]] = Seq(Seq(a),Seq(b,c,d),Seq(e,f))
 		assert (lst.length == rnglist.sum)
 		val rngpairs = rangeToPair(rnglist)
-		rngpairs.map{case Seq(b, u) => lst.slice(b,u)}
+		rngpairs.map{case (b, u) => lst.slice(b,u)}
 	}
 
 	def E_to_CE(E:Seq[Seq[Int]], label:Seq[Int]) = {
@@ -152,8 +155,8 @@ object HFinder2 {
 	}
 }
 
-class HGraph2 {
-	import HFinder2._
+class HGraph {
+	import HFinder._
 	var E:Seq[Seq[Int]] = Seq.empty[Seq[Int]]
 	var nr:Seq[Int] = Seq.empty[Int]
 	var nsize:Seq[Int] = Seq.empty[Int]
@@ -186,7 +189,7 @@ class HGraph2 {
 
 		val E_list = Buffer.empty[Seq[Seq[Int]]]
 
-		for (Seq(base, upper) <- rangeToPair(lr)) {
+		for ((base, upper) <- rangeToPair(lr)) {
 			val u = subGraphTypeFinder(E.slice(base,upper), nr)._1 == "uni"
 			val subE = if (nsize == None) {
 							preprocessE(E.slice(base,upper), u)
@@ -327,10 +330,10 @@ class HGraph2 {
 		assert (layer == belongJudger(cr)(src_cid))
 		val src_tobe_empty = (csize(src_cid) == nsz)
 
-		val Seq(dst_b, dst_u) = rangeToPair(cr)(layer)
+		val (dst_b, dst_u) = rangeToPair(cr)(layer)
 		val all_dst_empty = Buffer.range(dst_b, dst_u).map{csize(_) == 0}
 
-		val lsrc_cid = src_cid - rangeToPair(cr)(layer)(0)
+		val lsrc_cid = src_cid - rangeToPair(cr)(layer)._1
 		all_dst_empty(lsrc_cid) = src_tobe_empty
 
 		val all_cnum_inc = all_dst_empty.map{dst_was_empty =>
@@ -534,7 +537,7 @@ class HGraph2 {
 		if (csize(cid) == 0 || layer_cnum(layer) == 1) {
 			Seq.fill(cr(layer))(0.0)
 		} else {
-		val Seq(dst_b, dst_u) = rangeToPair(cr)(layer)
+		val (dst_b, dst_u) = rangeToPair(cr)(layer)
 
 		val decr_S = decrease_S(layer)
 		val decr_M = decrease_M(layer)
@@ -562,7 +565,7 @@ class HGraph2 {
 		if (mq < -1e-6) {
 			val ldst_cid = alldq.indexOf(mq)
 			val layer = belongJudger(cr)(cid)
-			val dst_cid = ldst_cid + rangeToPair(cr)(layer)(0)
+			val dst_cid = ldst_cid + rangeToPair(cr)(layer)._1
 			dst_cid
 		} else {
 			cid
@@ -575,7 +578,7 @@ class HGraph2 {
 		if (mq < -1e-6) {
 			val ldst_cid = alldq.indexOf(mq)
 			val layer = belongJudger(nr)(nid)
-			val dst_cid = ldst_cid + rangeToPair(cr)(layer)(0)
+			val dst_cid = ldst_cid + rangeToPair(cr)(layer)._1
 			dst_cid
 		} else {
 			nlabel(nid)
@@ -602,9 +605,9 @@ class HGraph2 {
 					// debug
 					if (merged % 100 == 0){
 						val endt = System.currentTimeMillis
-						println(s"time used ${endt - startt}")
+						// println(s"time used ${endt - startt}")
 						startt = endt
-						println(s"merged, $merged")
+						// println(s"merged, $merged")
 					}
 					// debug
 					// remove nullc in order to
@@ -625,7 +628,7 @@ class HGraph2 {
 			val cls = label_to_clist(nlabel).filter{!_.isEmpty}.map{_.sorted}.sortBy(_(0))
 			val cls2 = cls.map{c => Seq(c, Seq[Int]())}.flatten.dropRight(1)
 			updateC(cls2)
-			println(s"one loop (merge), HQ = $HQ")
+			//println(s"one loop (merge), HQ = $HQ")
 
 			// if merged bigger than threshold, reset merged
 			if (merged > 5) {
@@ -657,9 +660,9 @@ class HGraph2 {
 					// debug
 					if (moved % 100 == 0){
 						val endt = System.currentTimeMillis
-						println(s"time used ${endt - startt}")
+						// println(s"time used ${endt - startt}")
 						startt = endt
-						println(s"moved, $moved")
+						// println(s"moved, $moved")
 					}
 					// debug
 					// remove nullc in order to
@@ -684,7 +687,7 @@ class HGraph2 {
 			// after a loop, clear null c
 			val cls = label_to_clist(nlabel).filter{!_.isEmpty}.map{_.sorted}.sortBy(_(0))
 			updateC(cls)
-			println(s"one loop, HQ = $HQ")
+			// println(s"one loop, HQ = $HQ")
 			// if moved bigger than threshold, reset moved
 			if (moved > 5) {
 				node_picker = _rannseq(nr.sum)

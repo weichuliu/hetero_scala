@@ -13,19 +13,20 @@ object MurataTri {
 
 		if (moved == true) {
 			val ccxy = FastUnfolding(gen_E_from_C(E, g))
-			val cxy = retrieve_c(g.gen_cinfo(), ccxy)
+			val cxy = retrieve_c(g.gen_cinfo, ccxy)
 			return cxy
 		}
 		else {
-			return g.gen_cinfo()
+			return g.gen_cinfo
 		}
 	}
 
 	def retrieve_c(Cxy:Seq[Seq[Seq[Int]]], CCxy:Seq[Seq[Seq[Int]]]):Seq[Seq[Seq[Int]]] = {
-		val rc = for ((layerC, layerCC) <- (Cxy, CCxy).zipped) yield {
-				layerCC map {clist => (clist map {layerC(_)}).flatten}
+		(Cxy, CCxy).zipped.map{
+			(C, CC) => CC map {
+				_.map{C}.flatten
+			}
 		}
-		rc.toSeq // Traversable toList
 	}
 
 	def gen_E_from_C(E:Seq[Seq[Int]], grph:Graph) = {
@@ -37,7 +38,7 @@ class Node(val NID:Int, val layer:Int) {
 	var degree = 0
 	var comm:Community = new Community(-1, -1) // replace null pointer
 	val adjcnt:Counter[(Node, Node)] = Counter() // adjlist in python ver
-	var neilist:Array[Int] = Array()
+	var neilist:Seq[Int] = Seq()
 	def dynamic_neighbours = for {
 		(adjn1, adjn2) <- adjcnt.keys
 		ntuple <- adjn1.adjcnt.keys ++ adjn2.adjcnt.keys
@@ -54,7 +55,7 @@ class Node(val NID:Int, val layer:Int) {
 	}
 
 	def gen_neighbours() {
-		neilist = (dynamic_neighbours map {_.NID}).toArray
+		neilist = (dynamic_neighbours map {_.NID}).toArray // use Array to save space
 	}
 }
 
@@ -98,10 +99,10 @@ class Community(var CID:Int, val layer:Int, ns:Iterable[Node] = MSet()) {
 }
 
 class Graph extends KPartiteGraph {
-	var E:Seq[Seq[Int]] = List()
+	var E:Seq[Seq[Int]] = Seq()
 	var M = 0
-	var NN:List[Int] = List()
-	var nlist:List[List[Node]] = List()
+	var NN:Seq[Int] = Seq()
+	var nlist:Seq[Seq[Node]] = Seq()
 	var clist:Seq[Seq[Community]] = Seq()
 
 	def readfile(fn:String) {updateE(readNet(fn))}
@@ -110,13 +111,13 @@ class Graph extends KPartiteGraph {
 		this.E = E
 		M = E.length
 		if (M > 2097151) {System.err.println("cube M will overflow"); assert (false)}
-		NN = List(0, 1, 2) map { layer:Int =>
+		NN = (0 to 2) map { layer:Int =>
 			// for layer in (0, 1, 2) get the max of layer
 			E.view.maxBy{_(layer)}.apply(layer) + 1
 		}
 
 		nlist = for ((n, layer) <- NN.zipWithIndex) yield
-		{List.range(0, n) map {new Node(_, layer)}}
+		{(0 until n) map {new Node(_, layer)}}
 
 		for (e <- E) {
 			val n0 = nlist(0)(e(0))
@@ -209,11 +210,10 @@ class Graph extends KPartiteGraph {
             assc.gen_partner()
 	}
 
-	def gen_cinfo() = {
-		val cinfo = for (cl <- clist) yield {
-			cl map {c => (c.nodes map {_.NID}).toList}
-			}
-		cinfo
+	def gen_cinfo = {
+		clist.map{
+			_ map {c => (c.nodes.map{_.NID}).toSeq}
+		}
 	}
 
 	def mv_nd(layer:Int, NID:Int, dst_CID:Int) {
@@ -242,18 +242,20 @@ class Graph extends KPartiteGraph {
 		val src_c = node.comm
 
 		val oriQ = modularity()
-		var dQ_list:List[(Community, Double)] = List()
+
+		val dQ_list = Buffer.empty[(Community, Double)]
 		for (nei_c <- neic_list) {
 			move_node(node, nei_c)
 			val dQ = modularity() - oriQ
-			dQ_list = (nei_c, dQ) :: dQ_list
+			// if (dQ > 0)
+			dQ_list.append((nei_c, dQ))
 		}
 		move_node(node, src_c)
 
-		dQ_list.reverse
+		dQ_list.toSeq
 	}
 
-	def all_pos_dQ(layer:Int, nid:Int):List[(Community, Double)] = {
+	def all_pos_dQ(layer:Int, nid:Int):Seq[(Community, Double)] = {
 		val node = nlist(layer)(nid)
 		val src_c = node.comm
 
@@ -300,10 +302,9 @@ class Graph extends KPartiteGraph {
 		moved
 	}
 
-	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] = {
+	def candidateID_pairs(layer:Int, nid:Int):Seq[((Int, Int), Double)] = {
 		all_pos_dQ(layer, nid) map {
 			case (c:Community, dQ:Double) => ((c.layer, c.CID), dQ)
-			case _ => assert(false); ((0, 0), 0.0)
 		}
 	}
 

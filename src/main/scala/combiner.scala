@@ -35,8 +35,7 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 
 	// seperate E into different subgraphs
 	val E_list = rangeToPair(lr) map {
-		case base :: upper :: Nil => E.slice(base, upper)
-		case _ => {assert(false);Seq()}
+		case (base, upper) => E.slice(base, upper)
 	}
 
 	// use size of graph as weight
@@ -46,7 +45,7 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 	val subgraphs = E_list map {new SubGraph(_, nr)}
 
 	// init global_clist
-	val c_list = Seq.range(0, nr.sum) map {i => MSet(i)}
+	val c_list = (0 until nr.sum) map {i => MSet(i)}
 
 	def reach_minimal():Boolean = {
 		val (node_picker, node_resetter) = gennodeseq(1000, nr.sum)
@@ -113,7 +112,6 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 
 		if (posc.isEmpty) None
 		else {
-			// dQ_list = List[(g_cid:Int, dQ:Double)]
 			val dQ_list:Seq[(Int, Double)] = 
 				for (g_cid <- posc) yield {
 					val dQ = (w_list, subgraphs).zipped.map{_ * _.caldq(g_nid, g_cid)}
@@ -141,7 +139,7 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 	}
 
 	def updateC(clists:Seq[Seq[Int]]) {
-		assert (clists.flatten.sorted == Seq.range(0, nr.sum))
+		assert (clists.flatten.sorted == (0 until nr.sum))
 
 		val l_of_n = belongJudger(nr)
 		def l_of_c(c:Seq[Int]) = {
@@ -152,9 +150,9 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 
 	    val c_nums_in_layer = Counter(clists.map{l_of_c(_)}:_*)
 	    val new_clists = 
-	    for (layer <- Seq.range(0, nr.length)) yield {
+	    for (layer <- (0 until nr.length)) yield {
 	    	clists.filter{l_of_c(_) == layer} ++
-	    	Seq.range(0, nr(layer) - c_nums_in_layer(layer)).map{i => Seq[Int]()}
+	    	(0 until nr(layer) - c_nums_in_layer(layer)).map{i => Seq[Int]()}
 	    }
 
 	    for ((c, cid) <- new_clists.flatten.zipWithIndex; nid <- c) move_node(nid, cid)
@@ -188,7 +186,7 @@ class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 	if (gtype == "uni") {
 		val g_layer = layerinfo(0)
 		val pair = rangeToPair(nr)(g_layer)
-		Seq.range(pair(0), pair(1)).zipWithIndex.foreach {
+		(pair._1 until pair._2).zipWithIndex.foreach {
 			case (g_cid, l_cid) => glt_c(g_cid) = (0, l_cid)
 			case _ => assert(false)
 		}
@@ -196,7 +194,7 @@ class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 		for {
 			(g_layer, l_layer) <- layerinfo.zipWithIndex
 			pair = rangeToPair(nr)(g_layer)
-			(g_cid, l_cid) <- Seq.range(pair(0), pair(1)).zipWithIndex
+			(g_cid, l_cid) <- (pair._1 until pair._2).zipWithIndex
 		} glt_c(g_cid) = (l_layer, l_cid)
 	}
 
@@ -208,7 +206,7 @@ class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 	if (gtype == "uni") {
 		val g_layer = layerinfo(0)
 		val pair = rangeToPair(nr)(g_layer)
-		val real_c = Seq.range(pair(0), pair(1)) map {i => Buffer[Int]()}
+		val real_c = (pair._1 until pair._2) map {i => Buffer[Int]()}
 
 		for {(c, cid) <- real_c.zipWithIndex
 			g_cid = lgt_c((0, cid))
@@ -222,7 +220,7 @@ class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 			(g_layer, l_layer) <- layerinfo.zipWithIndex
 			pair = rangeToPair(nr)(g_layer)
 		} yield {
-			val real_c = Seq.range(pair(0), pair(1)) map {i => Buffer[Int]()}
+			val real_c = (pair._1 until pair._2) map {i => Buffer[Int]()}
 			for {(c, cid) <- real_c.zipWithIndex
 				g_cid = lgt_c((l_layer, cid))
 				g_nid = g_cid

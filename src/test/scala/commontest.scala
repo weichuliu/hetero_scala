@@ -32,7 +32,7 @@ class commonSuite extends FunSuite {
 		val l = Seq (5,10,15,20)
 		val p = rangeToPair(l)
 		val p_debet = Seq(
-			Seq(0,5), Seq(5,15), Seq(15,30), Seq(30,50)
+			(0,5), (5,15), (15,30), (30,50)
 			)
 		assert (p == p_debet)
 
@@ -74,7 +74,7 @@ class commonSuite extends FunSuite {
 		val nr = Seq(60, 60, 50)
 
 		val E_list = rangeToPair(lr) map {
-			case Seq(base, upper) => E.slice(base, upper)
+			case (base, upper) => E.slice(base, upper)
 			case _ => {assert(false);Seq()}
 		}
 

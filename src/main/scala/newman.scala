@@ -12,7 +12,7 @@ object Newman {
 		for (e <- E) yield {
 			val e0 = e(0)
 			val e1 = e(1)
-			List(nl(e0).comm.CID, nl(e1).comm.CID)
+			Seq(nl(e0).comm.CID, nl(e1).comm.CID)
 		}
 	}
 
@@ -27,10 +27,10 @@ object Newman {
 
 		if (moved == true) {
 			val cc = FastUnfolding(gen_E_from_C(E, g))
-			val c = retrieve_c(g.gen_cinfo(), cc)
+			val c = retrieve_c(g.gen_cinfo, cc)
 			return c map {_.sorted}
 		} else {
-			g.gen_cinfo()
+			g.gen_cinfo
 		}
 	}
 }
@@ -75,10 +75,10 @@ class Community(var CID:Int, ns:Iterable[Node] = MSet()) {
 }
 
 class Graph extends KPartiteGraph {
-	var E:Seq[Seq[Int]] = List()
+	var E:Seq[Seq[Int]] = Seq()
 	var M = 0
 	var N = 0
-	var nlist:List[Node] = List()
+	var nlist:Seq[Node] = Seq()
 	var clist:Seq[Community] = Seq()
 
 	def readfile(fn:String) {updateE(readNet(fn))}
@@ -91,7 +91,7 @@ class Graph extends KPartiteGraph {
 			this.E = E
 			M = E.length
 			N = E.flatten.max + 1
-			nlist = List.range(0, N) map {new Node(_)}
+			nlist = (0 until N) map {new Node(_)}
 			for (e <- E) {
 				val n0 = nlist(e(0))
 				val n1 = nlist(e(1))
@@ -104,7 +104,7 @@ class Graph extends KPartiteGraph {
 	}
 
 	def updateWE(WE:Seq[Seq[Int]]) {
-		this.E = List()
+		this.E = Seq()
 		val tE = E.transpose
 		val n0l = tE(0)
 		val n1l = tE(1)
@@ -112,7 +112,7 @@ class Graph extends KPartiteGraph {
 		M = wl.sum
 		N = n0l.max max n1l.max
 
-		nlist = List.range(0, N) map {new Node(_)}
+		nlist = (0 until N) map {new Node(_)}
 		for ((e0, e1, w) <- (n0l, n1l, wl).zipped) {
 			val n0 = nlist(e0)
 			val n1 = nlist(e1)
@@ -207,7 +207,7 @@ class Graph extends KPartiteGraph {
 		(square(src_ne) - square(src_oe) + square(dst_ne) - square(dst_oe)).toDouble / square(2 * M)
 	}
 
-	def all_pos_dQ(layer:Int, nid:Int):List[(Community, Double)] = {
+	def all_pos_dQ(layer:Int, nid:Int):Seq[(Community, Double)] = {
 		// in newman, layer not used
 		val node = nlist(nid)
 		val src_c = node.comm
@@ -216,19 +216,19 @@ class Graph extends KPartiteGraph {
 		val nclist = (for (n <- nvlist if n.comm != src_c) yield n.comm).toSet
 
 		val oriQ = modularity
-		var dQlist:List[(Community, Double)] = Nil
+		val dQlist = Buffer.empty[(Community, Double)]
 
 		for (neic <- nclist) {
 			val dQ = calc_dQ(nid, neic)
 			if (dQ > 0) 
-				dQlist = (neic, dQ) :: dQlist
+				dQlist.append((neic, dQ))
 		}
 		/////////////////////////////////
 		// self.move_node(node, src_c)
 		// not need only in newman
 		// because the cal_dQ is not moving nodes
 
-		dQlist.reverse
+		dQlist.toSeq
 	}
 
 	def reach_minimal():Boolean = {
@@ -262,13 +262,13 @@ class Graph extends KPartiteGraph {
 		moved
 	}
 
-	def gen_cinfo() = {
+	def gen_cinfo = {
 		for (c <- clist) yield {
-			(c.nodes map {_.NID}).toList
+			(c.nodes map {_.NID}).toSeq
 		}
 	}
 
-	def candidateID_pairs(layer:Int, nid:Int):List[((Int, Int), Double)] = {
+	def candidateID_pairs(layer:Int, nid:Int):Seq[((Int, Int), Double)] = {
 		all_pos_dQ(layer, nid) map {
 			// no layer in newman.Community, always 0
 			case (c:Community, dQ:Double) => ((0, c.CID), dQ)

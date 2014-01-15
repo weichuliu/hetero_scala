@@ -14,7 +14,7 @@ class counterSuite extends FunSuite {
 		assert(nc(n2) == 2)
 		assert(nc(n3) == 1)
 		assert(nc(n4) == 1)
-		assert(nc.keys.toList.sortBy{x:Node => x.NID} == List(n1,n2,n3,n4))
+		assert(nc.keys.toSeq.sortBy{x:Node => x.NID} == Seq(n1,n2,n3,n4))
 
 		val n5 = new Node(5)
 		val anothernc = Counter(n5)
@@ -25,11 +25,6 @@ class counterSuite extends FunSuite {
 		assert(newn5.degree == 10)
 
 		// nc.sub
-
-
-
-
-
 	}
 }
 

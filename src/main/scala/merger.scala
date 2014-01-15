@@ -1,9 +1,10 @@
 package merger
 import common.Common._
-import common.HFCommon.{subGraphTypeFinder, gen_E_from_C, retr_c, gen_cofn_from_c, gen_nr_from_c, orderOfSeq}
+import common.HFCommon._
 import ufinder.UFinder.{Louvain => uLouvain}
 import kfinder.KFinder.{Louvain => kLouvain}
 import combiner.Combiner.{FastUnfolding => comFU}
+import hfinder.HFinder.{FU => hfFU}
 import collection.mutable.{Set => MSet, Map => MMap, Buffer, Seq => MSeq}
 
 
@@ -50,7 +51,7 @@ class HGraph {
 		this.E = E
 		this.lr = lr
 		this.nr = nr
-		subE_list = rangeToPair(lr).map{case Seq(a, b) => E.slice(a, b)}
+		subE_list = rangeToPair(lr).map{case (a, b) => E.slice(a, b)}
 		subG_list = subE_list.map{new SubGraph(_, lr, nr)}
 	}
 
@@ -61,7 +62,7 @@ class HGraph {
 		}
 
 		val result_merged_falldown = (0 until nr.length).map{l => merge(result_layers(l))}
-		val layer_start_id = rangeToPair(nr).map{x => x(0)}
+		val layer_start_id = rangeToPair(nr).map{x => x._1}
 
 		// get nid_falldown into nid, then merge all layers.
 		val result_merged = Buffer[Seq[Int]]()
@@ -83,7 +84,7 @@ class HGraph {
 		}
 
 		val result_merged_falldown = (0 until nr.length).map{l => merge(result_layers(l))}
-		val layer_start_id = rangeToPair(nr).map{x => x(0)}
+		val layer_start_id = rangeToPair(nr).map{x => x._1}
 
 		// get nid_falldown into nid, then merge all layers.
 		val result_merged = Buffer[Seq[Int]]()
@@ -95,15 +96,8 @@ class HGraph {
 		val new_E = gen_E_from_C(E, result_merged)
 
 		val newnsize:Seq[Int] = result_merged.map{_.length}.toSeq // each node sized 1
-		val newnsizes = rangeToPair(new_nr).map{
-			case Seq(b,u) => newnsize.slice(b,u)
-			case _ => {assert(false);Seq()}
-		}
-		val hg2 = new hfinder.HGraph(new_E, lr, 
-			new_nr, newnsizes.map{x=>MSeq(x:_*)})
-		// println("hg2.HQ:${hg2.HQ} => ......")\
-		hg2.minimizeQ()
-		val cc = hg2.c_result
+
+		val cc = hfFU(new_E, lr, new_nr, Some(newnsize))
 		val c = retr_c(result_merged, cc)
 		c.map{_.sorted}.sortWith(orderOfSeq)
 	}
@@ -117,7 +111,7 @@ class SubGraph(val subE:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 	val missed_node_layers = gen_missed_node
 
 	def falldownE = {
-		val layer_start_id = rangeToPair(nr).map{x => x(0)}
+		val layer_start_id = rangeToPair(nr).map{x => x._1}
 		val offsets = layerinfo.map{layer_start_id(_)}
 		subE.map{e => (e, offsets).zipped.map{_ - _}}
 	}
