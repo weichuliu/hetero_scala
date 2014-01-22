@@ -10,16 +10,16 @@ import System.err.{println => perr}
 // 		"""
 // 		calculate_modularity [hfolder]
 // 		  description:
-// 		    to calculate composite modularity of the graph
+// 			to calculate composite modularity of the graph
 // 		  files required in hfolder:
-// 		    hetero.net
+// 			hetero.net
 // 			.meta
-// 		    result.cmu
+// 			result.cmu
 
 // 		detect_community [cm|mg|hf|qhf|mghf] [hfolder]
 // 		  description:
-// 		    community detection algorithms
-// 		    ss
+// 			community detection algorithms
+// 			ss
 // 		  files required in hfolder:
 
 
@@ -73,7 +73,7 @@ object detect_community {
 			).mkString("\r\n")
 
 	def main(args: Array[String]): Unit = {
-		if (args.length == 0 || !Seq("cm", "hf", "qfu").contains(args(0)) ) {
+		if (args.length == 0 || !Seq("cm", "hf", "qfu", "mergehf").contains(args(0)) ) {
 			perr(errinfo)
 		} else if (Seq("cm","hf", "qfu") contains args(0)) {
 			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
@@ -95,7 +95,25 @@ object detect_community {
 
 			println("------")
 			printNet(result)
+		} else if (args(0) == "mergehf" ) {
+			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
+			val lrstr = args(1)
+			val nrstr = args(2)
+			val nsizestr = args(3)
+
+			val lr = stol(lrstr)
+			val nr = stol(nrstr)
+			val nsize = stol(nsizestr)
+
+			val E = (for (ln <- io.Source.stdin.getLines) yield {stol(ln)}).toSeq
+
+
+			val result:Seq[Seq[Int]] = hfinder.HFinder.Louvain_with_init_nsize(E, lr, nr, nsize)
+
+			println("------")
+			printNet(result)
 		}
+
 	}
 }
 

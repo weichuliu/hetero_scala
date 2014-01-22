@@ -4,7 +4,7 @@ import common.HFCommon._
 import ufinder.UFinder.{Louvain => uLouvain}
 import kfinder.KFinder.{Louvain => kLouvain}
 import combiner.Combiner.{FastUnfolding => comFU}
-import hfinder.HFinder.{FU => hfFU}
+import hfinder.HFinder.{FU => hfFU, Louvain_with_init_nsize => hfLV_nsize}
 import collection.mutable.{Set => MSet, Map => MMap, Buffer, Seq => MSeq}
 
 
@@ -26,11 +26,25 @@ object Merger {
 				cn_dict(seqv) = Buffer[Int]()
 			cn_dict(seqv).append(k)
 		}
-
 		val merged = cn_dict.values.toVector.toSeq // not toSeq
-
 		merged.map{_.toSeq.sorted}.sortWith(orderOfSeq)
 	}
+
+	private def fnMerge(fn:String, method:String) = {
+		val g = new HGraph
+		g.readfolder(fn)
+		method match {
+			case "hf" => g.detect_cmu
+			case "cm" => g.hfinder_detect_cmu
+			case _ => throw new Exception("method should be in hf|cm (fnMerge)");Seq[Seq[Int]]()
+		}
+
+	}
+
+	def fnMgCM(fn:String) = fnMerge(fn, "cm")
+
+	def fnMgHF(fn:String) = fnMerge(fn, "hf")
+
 }
 
 class HGraph {
@@ -97,7 +111,8 @@ class HGraph {
 
 		val newnsize:Seq[Int] = result_merged.map{_.length}.toSeq // each node sized 1
 
-		val cc = hfFU(new_E, lr, new_nr, Some(newnsize))
+		// val cc = hfFU(new_E, lr, new_nr, Some(newnsize))
+		val cc = hfLV_nsize(new_E, lr, new_nr, newnsize)
 		val c = retr_c(result_merged, cc)
 		c.map{_.sorted}.sortWith(orderOfSeq)
 	}

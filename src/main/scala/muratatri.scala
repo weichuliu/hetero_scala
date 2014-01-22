@@ -175,39 +175,39 @@ class Graph extends KPartiteGraph {
 		assert (tmpb)
 		dst_c.nodes.add(node)
 
-        src_c.degree -= node.degree
-        dst_c.degree += node.degree
+		src_c.degree -= node.degree
+		dst_c.degree += node.degree
 
-        val account:Counter[(Community, Community)] = Counter()
-        for (((n1, n2), cnt) <- node.adjcnt.items)
-        	account.add((n1.comm, n2.comm), cnt)
+		val account:Counter[(Community, Community)] = Counter()
+		for (((n1, n2), cnt) <- node.adjcnt.items)
+			account.add((n1.comm, n2.comm), cnt)
 
-        src_c.aCCount.subCounter(account)
-        dst_c.aCCount.addCounter(account)
+		src_c.aCCount.subCounter(account)
+		dst_c.aCCount.addCounter(account)
 
-        // below line: in muratatri acs is a tuple2.
-        for ((acs, cnt) <- account.items; ac <- acs._1 :: acs._2 :: Nil) {
-        	val another_ac = if (ac == acs._1) acs._2 else acs._1
-        	// 2 communities sorted by layer
-        	val old_link = {if (src_c.layer < another_ac.layer) (src_c, another_ac)
-        		else (another_ac, src_c)}
-        	val new_link = {if (dst_c.layer < another_ac.layer) (dst_c, another_ac)
-        		else (another_ac, dst_c)}
+		// below line: in muratatri acs is a tuple2.
+		for ((acs, cnt) <- account.items; ac <- acs._1 :: acs._2 :: Nil) {
+			val another_ac = if (ac == acs._1) acs._2 else acs._1
+			// 2 communities sorted by layer
+			val old_link = {if (src_c.layer < another_ac.layer) (src_c, another_ac)
+				else (another_ac, src_c)}
+			val new_link = {if (dst_c.layer < another_ac.layer) (dst_c, another_ac)
+				else (another_ac, dst_c)}
 
-            ac.aCCount.sub(old_link, cnt)
-            ac.aCCount.add(new_link, cnt)
-        }
+			ac.aCCount.sub(old_link, cnt)
+			ac.aCCount.add(new_link, cnt)
+		}
 
-        src_c.gen_partner()
-        dst_c.gen_partner()
+		src_c.gen_partner()
+		dst_c.gen_partner()
 
-        val assc_list:MSet[Community] = MSet()
-        for {c <- (src_c :: dst_c :: Nil)
-        	 (c0,c1) <- c.aCCount.keys
-        } {assc_list.add(c0); assc_list.add(c1)}
+		val assc_list:MSet[Community] = MSet()
+		for {c <- (src_c :: dst_c :: Nil)
+			 (c0,c1) <- c.aCCount.keys
+		} {assc_list.add(c0); assc_list.add(c1)}
 
-        for (assc <- assc_list)
-            assc.gen_partner()
+		for (assc <- assc_list)
+			assc.gen_partner()
 	}
 
 	def gen_cinfo = {
@@ -260,9 +260,9 @@ class Graph extends KPartiteGraph {
 		val src_c = node.comm
 
 		val nc_list:Set[Community] = Set() ++ node.neilist.map{nlist(layer)(_).comm}.filter{_ != src_c}
-        val dQ_list = calc_dQlist(layer, nid, nc_list)
+		val dQ_list = calc_dQlist(layer, nid, nc_list)
 
-        dQ_list.filter{_._2 > 0}
+		dQ_list.filter{_._2 > 0}
 	}
 
 	def calc_argmaxC(layer:Int, nid:Int):Option[Community] = {

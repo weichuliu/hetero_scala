@@ -119,16 +119,16 @@ object HFCommon {
 	}
 
 	def gen_nr_from_c(nr:Seq[Int], C:Seq[Seq[Int]]) = {
-	    val c_of_n = gen_cofn_from_c(C)
-	    val l_of_n = belongJudger(nr)
+		val c_of_n = gen_cofn_from_c(C)
+		val l_of_n = belongJudger(nr)
 		
-	    val new_nr = MSeq.fill(nr.length)(0)
-	    for (c <- C) {
-	    	val l = c.map{l_of_n(_)}.distinct
-	    	assert (l.length == 1)
-	    	new_nr(l.head) += 1
-	    }
-	    new_nr.toSeq
+		val new_nr = MSeq.fill(nr.length)(0)
+		for (c <- C) {
+			val l = c.map{l_of_n(_)}.distinct
+			assert (l.length == 1)
+			new_nr(l.head) += 1
+		}
+		new_nr.toSeq
 	}
 	
 }

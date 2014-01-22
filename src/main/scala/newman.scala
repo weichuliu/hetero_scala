@@ -154,14 +154,14 @@ class Graph extends KPartiteGraph {
 				src_c.aii -= cnt
 				dst_c.aii += cnt
 			} else {
-                if (nei.comm == dst_c)
-                    dst_c.aii += cnt * 2
-                if (nei.comm == src_c)
-                    src_c.aii -= cnt * 2
+				if (nei.comm == dst_c)
+					dst_c.aii += cnt * 2
+				if (nei.comm == src_c)
+					src_c.aii -= cnt * 2
 			}
 		}
-        src_c.eii -= node.degree
-        dst_c.eii += node.degree
+		src_c.eii -= node.degree
+		dst_c.eii += node.degree
 	}
 
 	def mv_nd(layer:Int, nid:Int, dst_cid:Int) {
@@ -184,8 +184,8 @@ class Graph extends KPartiteGraph {
 		val (src_oe, src_oa) = (src_c.eii, src_c.aii)
 		val (dst_oe, dst_oa) = (dst_c.eii, dst_c.aii)
 
-        val src_ne = src_oe - node.degree
-        val dst_ne = dst_oe + node.degree
+		val src_ne = src_oe - node.degree
+		val dst_ne = dst_oe + node.degree
 
 		var (src_na, dst_na) = (src_oa, dst_oa)
 		for ((nei, cnt) <- node.neilist.items) {

@@ -26,7 +26,7 @@ object Combiner {
 			val cc = FastUnfolding(new_E, lr, new_nr)
 			retr_c(g.c_result, cc)
 		}
-	    else g.c_result
+		else g.c_result
 	}
 }
 
@@ -144,18 +144,18 @@ class HGraph(E:Seq[Seq[Int]], val lr:Seq[Int], val nr:Seq[Int]) {
 		val l_of_n = belongJudger(nr)
 		def l_of_c(c:Seq[Int]) = {
 			val l = c.map{l_of_n(_)}.distinct
-	    	assert (l.length == 1)
-	    	l.head
-	    }
+			assert (l.length == 1)
+			l.head
+		}
 
-	    val c_nums_in_layer = Counter(clists.map{l_of_c(_)}:_*)
-	    val new_clists = 
-	    for (layer <- (0 until nr.length)) yield {
-	    	clists.filter{l_of_c(_) == layer} ++
-	    	(0 until nr(layer) - c_nums_in_layer(layer)).map{i => Seq[Int]()}
-	    }
+		val c_nums_in_layer = Counter(clists.map{l_of_c(_)}:_*)
+		val new_clists = 
+		for (layer <- (0 until nr.length)) yield {
+			clists.filter{l_of_c(_) == layer} ++
+			(0 until nr(layer) - c_nums_in_layer(layer)).map{i => Seq[Int]()}
+		}
 
-	    for ((c, cid) <- new_clists.flatten.zipWithIndex; nid <- c) move_node(nid, cid)
+		for ((c, cid) <- new_clists.flatten.zipWithIndex; nid <- c) move_node(nid, cid)
 	}
 
 }
@@ -242,7 +242,7 @@ class SubGraph(val E:Seq[Seq[Int]], nr:Seq[Int]) {
 		else {
 			val (layer, nid) = glt_n(g_nid)
 			val dqlist = g.candidateID_pairs(layer, nid)
-			//           (l_cinfo, dq) => (lgt_c(l_cinfo), dq)
+			//		   (l_cinfo, dq) => (lgt_c(l_cinfo), dq)
 			dqlist map {pair => (lgt_c(pair._1), pair._2)}
 		}
 	}

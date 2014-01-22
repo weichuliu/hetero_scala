@@ -170,27 +170,27 @@ class Graph extends KPartiteGraph {
 		assert (tmpb)
 		dst_c.nodes.add(node)
 
-        src_c.degree -= node.degree
-        dst_c.degree += node.degree
+		src_c.degree -= node.degree
+		dst_c.degree += node.degree
 
-        val account:Counter[Community] = Counter()
-        for ((n, cnt) <- node.adjcnt.items)
-        	account.add(n.comm, cnt)
+		val account:Counter[Community] = Counter()
+		for ((n, cnt) <- node.adjcnt.items)
+			account.add(n.comm, cnt)
 
-        src_c.aCCount.subCounter(account)
-        dst_c.aCCount.addCounter(account)
+		src_c.aCCount.subCounter(account)
+		dst_c.aCCount.addCounter(account)
 
-        for ((ac, cnt) <- account.items) {
-            ac.aCCount.sub(src_c, cnt)
-            ac.aCCount.add(dst_c, cnt)
-        }
+		for ((ac, cnt) <- account.items) {
+			ac.aCCount.sub(src_c, cnt)
+			ac.aCCount.add(dst_c, cnt)
+		}
 
-        src_c.gen_partner()
-        dst_c.gen_partner()
+		src_c.gen_partner()
+		dst_c.gen_partner()
 
-        val assc_list = Set() ++ src_c.aCCount.keys ++ dst_c.aCCount.keys
-        for (assc <- assc_list)
-            assc.gen_partner()
+		val assc_list = Set() ++ src_c.aCCount.keys ++ dst_c.aCCount.keys
+		for (assc <- assc_list)
+			assc.gen_partner()
 	}
 
 	def gen_cinfo = {
@@ -243,9 +243,9 @@ class Graph extends KPartiteGraph {
 		val src_c = node.comm
 
 		val nc_list:Set[Community] = Set() ++ node.neilist.map{nlist(layer)(_).comm}.filter{_ != src_c}
-        val dQ_list = calc_dQlist(layer, nid, nc_list)
+		val dQ_list = calc_dQlist(layer, nid, nc_list)
 
-        dQ_list.filter{_._2 > 0}
+		dQ_list.filter{_._2 > 0}
 	}
 
 	def calc_argmaxC(layer:Int, nid:Int):Option[Community] = {

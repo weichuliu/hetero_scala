@@ -3,7 +3,7 @@ package hfinder
 import common.Common._
 import common.Counter
 import common.HFCommon._
-import math.log
+import math.{log, pow}
 import System.err.{println => perr}
 import collection.mutable.{Seq => MSeq, Set => MSet, Map => MMap, Buffer}
 
@@ -33,13 +33,11 @@ object HFinder {
 				if (e(0) == e(1)) {
 					val s = nsizes(e(0))
 					if (s * (s - 1) / 2 < n) {
-						perr(s"the self-loop $e in size $s node cnts $n")
-						assert(false)
+						throw new Exception(s"the self-loop $e in size $s node cnts $n")
 					}
 				} else if (n > 1) {
 					if (e.map{nsizes(_)}.product < n) {
-						perr(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
-						assert(false)
+						throw new Exception(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
 					}
 				}
 			}
@@ -52,13 +50,36 @@ object HFinder {
 			for ((e, n) <- edgecount.items)
 				if (n > 1)
 					if (e.map{nsizes(_)}.product < n) {
-						perr(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
-						assert(false)
+						throw new Exception(s"the edge $e with node size ${e.map{nsizes(_)}.product} has cnt $n")
 					}
 
 			val distinct_E = E.sortWith(orderOfSeq)
 			distinct_E
 		}
+	}
+
+	// backend of py merge_hfinder
+	def Louvain_with_init_nsize(
+		E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int], nsize:Seq[Int]) = {
+		val g1 = new HGraph()
+		val g2 = new HGraph()
+		g1.update(E, lr, nr, Some(nsize))
+		var l = 1
+		while (l != 0) {
+			l = g1.minimizeQ()
+			// println("g ", g1.HQ)
+			g2.update(E_to_CE(g1.E, g1.nlabel), g1.lr, g1.cr, Some(g1.gen_csize))
+			// println("g2 ", g2.HQ)
+			g2.minimizeQ()
+			// println("g2 after ", g2.HQ)
+			val retc = retr_c(g1.gen_clist, g2.gen_clist)
+			g1.updateC(retc)
+			// println("......................")
+			g1.gen_clist.filter{!_.isEmpty}.map{_.sorted}.sortWith(orderOfSeq)
+		}
+		g1.gen_clist
+
+
 	}
 
 	def Louvain(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
@@ -68,14 +89,14 @@ object HFinder {
 		var l = 1
 		while (l != 0) {
 			l = g1.minimizeQ()
-			println("g ", g1.HQ)
+			// println("g ", g1.HQ)
 			g2.update(E_to_CE(g1.E, g1.nlabel), g1.lr, g1.cr, Some(g1.gen_csize))
-			println("g2 ", g2.HQ)
+			// println("g2 ", g2.HQ)
 			g2.minimizeQ()
-			println("g2 after ", g2.HQ)
+			// println("g2 after ", g2.HQ)
 			val retc = retr_c(g1.gen_clist, g2.gen_clist)
 			g1.updateC(retc)
-			println("......................")
+			// println("......................")
 			g1.gen_clist.filter{!_.isEmpty}.map{_.sorted}.sortWith(orderOfSeq)
 		}
 		g1.gen_clist
@@ -126,11 +147,26 @@ object HFinder {
 		QFU(E, _lr, _nr)
 	}
 
+	// Not ready yet
+	// def MFU(E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int]) = {
+	// 	// mix
+	// 	val g = new HGraph()
+	// 	g.update(E, lr, nr)
+	// 	println(g.HQ)
+	// 	var (l, l2) = (-1, -1)
+
+	// 	while(l != 0 || l2 != 0) {
+	// 		l = g.minimizeQ_merge()
+	// 		l2 = g.minimizeQ()
+	// 	}
+	// 	g.gen_clist
+	// }
+
 	def divide[T](lst:Seq[T], rnglist:Seq[Int]) = {
 		// lst: Seq[T](a, b, c, d, e, f)
 		// rnglist: Seq(1,3,2)
 		// return Seq[Seq[T]] = Seq(Seq(a),Seq(b,c,d),Seq(e,f))
-		assert (lst.length == rnglist.sum)
+		assert (lst.length == rnglist.sum, "list divided by slice of wrong length")
 		val rngpairs = rangeToPair(rnglist)
 		rngpairs.map{case (b, u) => lst.slice(b,u)}
 	}
@@ -255,19 +291,26 @@ class HGraph {
 
 	def _S = (layer_nsize, layer_cnum).zipped.map{_ * log(_)}.sum // n * log(c)
 
-	def _M = {
+	def _M = _M_with_cnum(layer_cnum)
+
+	private def _M_with_cnum(_layer_cnum:Seq[Int]) = {
 		var m = 0.0
 		for ((subm, (gtype, glayerinfo)) <- (lr, sub_gtypes).zipped) {
 			val t = if (gtype == "uni") {
 				val cnum = glayerinfo(0)
-				layer_cnum(cnum) * (layer_cnum(cnum) + 1) / 2
+				_layer_cnum(cnum) * (_layer_cnum(cnum) + 1) / 2
+			} else if (gtype == "bi") {
+				glayerinfo.map{_layer_cnum(_)}.product
+			} else if (gtype == "tri") {
+				glayerinfo.map{_layer_cnum(_)}.product
 			} else {
-				glayerinfo.map{layer_cnum(_)}.product
+				throw new Exception("not a uni/bi/tri subnetwork"); 0.0
 			}
 			// println(s"$t * log($subm+1)")
 			m += log(subm+1) * t
 		}
 		m
+
 	}
 
 	def _LXY = CE_cnt.items.map{case (ce, cnt) => nCrln(ce_to_sprod(ce, csize), cnt)}.sum
@@ -276,8 +319,10 @@ class HGraph {
 		val nsz = nsize(nid)
 		val layer = belongJudger(nr)(nid)
 		val src_cid = nlabel(nid)
-		assert {layer == belongJudger(cr)(dst_cid) &&
-				layer == belongJudger(cr)(src_cid)}
+		assert (layer == belongJudger(cr)(dst_cid) &&
+			layer == belongJudger(cr)(src_cid),
+			"src and dst not in same layer (move_node)"
+			)
 
 		val lnks = _nlinks(nid).map{E(_)}
 		val old_clnk = Counter(E_to_CE(lnks, nlabel):_*)
@@ -319,7 +364,6 @@ class HGraph {
 
 		for (c <- changed_cset)
 			cache_lxy(c) = calc_LXY(cache_cntrs(c), csize)
-
 	}
 
 	def alldQ(nid:Int) = {
@@ -327,11 +371,11 @@ class HGraph {
 		val layer = belongJudger(nr)(nid)
 		val src_cid = nlabel(nid)
 
-		assert (layer == belongJudger(cr)(src_cid))
+		assert (layer == belongJudger(cr)(src_cid), "node's layer are diff from src_c (alldQ)")
 		val src_tobe_empty = (csize(src_cid) == nsz)
 
 		val (dst_b, dst_u) = rangeToPair(cr)(layer)
-		val all_dst_empty = Buffer.range(dst_b, dst_u).map{csize(_) == 0}
+		val all_dst_empty = MSeq.range(dst_b, dst_u).map{csize(_) == 0}
 
 		val lsrc_cid = src_cid - rangeToPair(cr)(layer)._1
 		all_dst_empty(lsrc_cid) = src_tobe_empty
@@ -341,33 +385,27 @@ class HGraph {
 		}
 
 		def alldS = {
-			val cnum = layer_cnum(layer)
-			for (cnum_l_inc <- all_cnum_inc) yield if (cnum_l_inc == 0) 0 else {
-				layer_nsize(layer) * (log(cnum + cnum_l_inc) - log(cnum))
-			}
+			val decr_S:Double = decrease_S(layer)
+			val incr_S:Double = increase_S(layer)
+
+			all_cnum_inc.map{c => c match {// c for change. -1/0/1
+				case -1 => decr_S
+				case 0 => 0.0
+				case 1 => incr_S
+				case _ => {throw new Exception("cnum change not in -1, 0, 1"); 0.0}
+			}}
 		}
 
 		def alldM = {
-			val alldm = Buffer[Buffer[Double]]()
-			for ((subm, (gtype, glayerinfo)) <- (lr, sub_gtypes).zipped; if glayerinfo.contains(layer)) {
-				val suballdm = if (gtype == "uni") {
-					all_cnum_inc.map{_ match {
-						case 0 => 0
-						case 1 => log(subm+1) * (layer_cnum(layer) + 1)
-						case -1 => log(subm+1) * -layer_cnum(layer)
-						case _ => {assert(false); 0}
-					}}
-				} else {
-					all_cnum_inc.map{cnum_l_inc =>
-						if (cnum_l_inc == 0) 0 else {
-							log(subm+1) * (cnum_l_inc *
-							glayerinfo.map{layer_cnum(_)}.product / layer_cnum(layer))
-						}
-					}
-				}
-				alldm.append(suballdm)
-			}
-			alldm.transpose.map{_.sum}
+			val decr_M:Double = decrease_M(layer)
+			val incr_M:Double = increase_M(layer)
+
+			all_cnum_inc.map{c => c match {
+				case -1 => decr_M
+				case 0 => 0.0
+				case 1 => incr_M
+				case _ => {throw new Exception("cnum change not in -1, 0, 1"); 0.0}
+			}}
 		}
 
 		def alldLXY = {
@@ -385,6 +423,8 @@ class HGraph {
 			for (dst_cid <- dst_b until dst_u) {
 				if (csize(dst_cid) == 0 && !dlxy_emptyc.isEmpty) {
 					alldlxy.append(dlxy_emptyc.get)
+				} else if (src_cid == dst_cid) {
+					alldlxy.append(0.0)
 				}
 				else {
 					newlabel(nid) = dst_cid
@@ -406,8 +446,12 @@ class HGraph {
 					// println(cclnk)
 					// assert (clnk == cclnk)
 
+					val sd_ce = Seq(src_cid, dst_cid).sorted
+					val o_LXY = {
+						cache_lxy(src_cid) + cache_lxy(dst_cid) -
+							nCrln(ce_to_sprod(sd_ce, csize), CE_cnt(sd_ce))
+					}
 
-					val o_LXY = calc_LXY(clnk, csize)
 					newcsize(dst_cid) += nsz
 					val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newcsize)
 					newcsize(dst_cid) -= nsz
@@ -427,7 +471,7 @@ class HGraph {
 		// if src_cid == dst_cid, return
 		if (src_cid != dst_cid) {
 		val b = belongJudger(cr)
-		assert (b(src_cid) == b(dst_cid))
+		assert (b(src_cid) == b(dst_cid), "src and dst in diff layer")
 		val layer = b(src_cid)
 
 		val nodes = nlabel.zipWithIndex.filter{_._1 == src_cid}.map{_._2}
@@ -460,7 +504,7 @@ class HGraph {
 			for (c <- newce.distinct)
 				cache_cntrs(c).add(newce, cnt)
 		}
-		assert (cache_cntrs(src_cid).isEmpty)
+		assert (cache_cntrs(src_cid).isEmpty, "src not empty after (merge_cmu)")
 
 		val changed_cset = Set[Int](src_cid) ++ cache_cntrs(dst_cid).keys.flatten
 		for (c <- changed_cset)
@@ -473,7 +517,7 @@ class HGraph {
 		else if (csize(src_cid) == 0 || csize(dst_cid) == 0) 0.0
 		else {
 		val b = belongJudger(cr)
-		assert (b(src_cid) == b(dst_cid))
+		assert (b(src_cid) == b(dst_cid), "src_cid and dst_cid are not in same layer")
 		val layer = b(src_cid)
 
 		// old - new, positive
@@ -481,24 +525,34 @@ class HGraph {
 		// old - new, positive
 		val decr_M = decrease_M(layer)
 		val dlxy = dlxy_merge(src_cid, dst_cid)
-		dlxy - decr_S - decr_M
+		dlxy + decr_S + decr_M
 	}}
 
 
 	def decrease_S(layer:Int) = {
-		// delta s when layer_cnum -= 1. positive
+		// delta s when layer_cnum -= 1. news - olds. negative
 		val cnum = layer_cnum(layer)
-		layer_nsize(layer) * (log(cnum) - log(cnum-1))
+		layer_nsize(layer) * (log(cnum-1) - log(cnum))
+	}
+
+	def increase_S(layer:Int) = {
+		// delta s when layer_cnum += 1. news - olds. positive
+		val cnum = layer_cnum(layer)
+		layer_nsize(layer) * (log(cnum+1) - log(cnum))
 	}
 
 	def decrease_M(layer:Int) = {
-		// delta m when layer_cnum -= 1. positive
-		var decrease_M = 0.0
-		for ( (subm, (gtype, glayerinfo)) <- (lr, sub_gtypes).zipped;
-			if glayerinfo contains layer ){
-				decrease_M += log(subm+1) * glayerinfo.map{layer_cnum}.product / layer_cnum(layer)
-			}
-		decrease_M
+		// delta m when layer_cnum -= 1. newm - oldm. negative
+		val _layer_cnum = layer_cnum.clone
+		_layer_cnum(layer) -= 1
+		_M_with_cnum(_layer_cnum) - _M // newm - oldm
+	}
+
+	def increase_M(layer:Int) = {
+		// delta m when layer_cnum += 1. newm - oldm. positive
+		val _layer_cnum = layer_cnum.clone
+		_layer_cnum(layer) += 1
+		_M_with_cnum(_layer_cnum) - _M // newm - oldm
 	}
 
 	def dlxy_merge(src_cid:Int, dst_cid:Int, _newcsize:Option[MSeq[Int]] = None) = {
@@ -551,7 +605,7 @@ class HGraph {
 				newcsize(dst_cid) += cszs
 				val dlxy_m = dlxy_merge(cid, dst_cid, Some(newcsize))
 				newcsize(dst_cid) -= cszs
-				dlxy_m - decr_S - decr_M
+				dlxy_m + decr_S + decr_M
 			} else {0.0}
 		}
 		alldq_m
@@ -602,13 +656,8 @@ class HGraph {
 				val argmin_cid = calc_mergemin_c(cid)
 				if (argmin_cid != cid) {
 					merged += 1
+					merge_cmu(cid, argmin_cid)
 					// debug
-					if (merged % 100 == 0){
-						val endt = System.currentTimeMillis
-						// println(s"time used ${endt - startt}")
-						startt = endt
-						// println(s"merged, $merged")
-					}
 					// debug
 					// remove nullc in order to
 					// savec
@@ -622,24 +671,30 @@ class HGraph {
 					// 	updateC(cls)
 					// }
 					// debug
-					merge_cmu(cid, argmin_cid)
 				}
+				// if (merged % 500 == 10){
+				// 	val endt = System.currentTimeMillis
+				// 	println(s"time used ${endt - startt}")
+				// 	startt = endt
+				// 	println(s"merged, $merged")
+				// 	// val cls = label_to_clist(nlabel).filter{!_.isEmpty}
+				// 	// updateC(cls)
+				// }
+
 			}
 			val cls = label_to_clist(nlabel).filter{!_.isEmpty}.map{_.sorted}.sortBy(_(0))
 			val cls2 = cls.map{c => Seq(c, Seq[Int]())}.flatten.dropRight(1)
 			updateC(cls2)
-			//println(s"one loop (merge), HQ = $HQ")
+			// println(s"one loop (merge), merged = $merged, HQ = $HQ")
 
 			// if merged bigger than threshold, reset merged
-			if (merged > 5) {
+			if (merged > 0) {
 				cmu_picker = _rannseq(cr.sum)
 				looped += 1
 				merged = -1
 			}
 		}
 		looped
-
-
 	}
 
 	def minimizeQ() = {
@@ -689,7 +744,9 @@ class HGraph {
 			updateC(cls)
 			// println(s"one loop, HQ = $HQ")
 			// if moved bigger than threshold, reset moved
-			if (moved > 5) {
+			if (moved > 0
+				// && (toloop != -1 && looped < toloop)
+				) {
 				node_picker = _rannseq(nr.sum)
 				looped += 1
 				moved = -1
@@ -697,4 +754,10 @@ class HGraph {
 		}
 		looped
 	}
+}
+
+object HGraph {
+	def apply() = new HGraph
+
+	def apply(folderfn:String) = {val g = new HGraph; g.readfolder(folderfn);g}
 }
