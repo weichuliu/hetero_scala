@@ -20,8 +20,24 @@ object HFCommon {
 		if (r == 1) {
 			log(n) // shortcut
 		} else {
-			gammaln(n+1) - gammaln(r+1) - gammaln(n-r+1)
+			buf_gammaln(n+1) - buf_gammaln(r+1) - buf_gammaln(n-r+1)
 		}
+	}
+
+	// buffer
+	private val buflen = 2048
+	val gammaln_buffer:Seq[Double] = {
+		val garray = new Array[Double](buflen)
+		for (i <- 1 until buflen)
+			garray(i) = gammaln(i)
+		garray
+	}
+
+	def buf_gammaln(x:Int) = {
+		if (0 < x && x < buflen)
+			gammaln_buffer(x)
+		else
+			gammaln(x)
 	}
 
 	def log2(n:Int):Double = log(n) / log(2)

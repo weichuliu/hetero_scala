@@ -9,4 +9,5 @@ scalacOptions ++= Seq("-feature", "-deprecation")
 initialCommands in console := """
 import common.Common._
 import common.HFCommon._
+import collection.mutable.{Set => MSet, Map => MMap, Seq => MSeq, Buffer}
 """

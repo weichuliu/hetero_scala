@@ -124,7 +124,39 @@ object Common {
 		}
 		(picknode _, resetnodeseq _)
 	}
+
+	def fn_F_PG(pfn:String, gfn:String) = {
+		def precision(p:Set[Int], g:Set[Int]) = (p intersect g).size.toDouble / p.size
+
+		def recall(p:Set[Int], g:Set[Int]) = (p intersect g).size.toDouble / g.size
+
+		def F_pg(p:Set[Int], g:Set[Int]) = {
+			val pres = precision(p,g)
+			val recl = recall(p,g)
+
+			if (pres == 0 && recl == 0)
+				0.0
+			else 2.0*pres*recl / (pres+recl) // harmonic mean
+		}
+
+		def F_pG(p:Set[Int], G:Seq[Set[Int]]) = G.view.map{g => F_pg(p, g)}.max
+
+		def F_PG(P:Seq[Set[Int]], G:Seq[Set[Int]]) = {
+			val lenV = P.flatten.length
+			assert (lenV == G.flatten.length, "P should has as many elements as G")
+			P.view.map{p => F_pG(p, G)*p.size/lenV}.sum
+		}
+
+		val pcmu_list = readNet(pfn)
+		val gcmu_list = readNet(gfn)
+
+		val pcmu = pcmu_list.map{_.toSet}
+		val gcmu = gcmu_list.map{_.toSet}
+
+		F_PG(pcmu, gcmu)
+	}
 }
+
 
 
 
