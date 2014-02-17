@@ -64,18 +64,29 @@ object detect_community {
 	import hfinder.HFinder.{Louvain, QFU}
 
 	val errinfo = Seq(
-			"usage: hetcom: [cm|hf|qfu] lrstr nrstr",
+			"usage:",
+			"",
+			"1. hetcom.jar dir METHODNAME [FOLDER]",
+			"   input from directory",
+			"   FOLDER should contain /hetero.net and /.meta",
+			"",
+			"2. hetcom.jar io METHODNAME lrstr nrstr < hetero.net",
+			"   hetero.net file input through stdin, used to interact with other programs",
+			"   lrstr/nrstr: string of lr and nr. Seperated by whitespace",
+			"",
+			"METHODNAME: choose from cm|hf|qhf",
+			"",
 			"cm for composite modularity optimization",
 			"hf for hetero finder Louvain",
 			"qfu for hetero finder QFU",
-			"input Hetero Net from stdin",
-			"result output through stdout after ------"
+			"result output through stdout after ------",
+			""
 			).mkString("\r\n")
 
 	def main(args: Array[String]): Unit = {
-		if (args.length == 0 || !Seq("cm", "hf", "qfu", "mergehf").contains(args(0)) ) {
+		if (args.length == 0) {
 			perr(errinfo)
-		} else if (Seq("cm","hf", "qfu") contains args(0)) {
+		} else if (Seq("cm","hf", "qfu", "mergehf") contains args(0)) {
 			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
 			val lrstr = args(1)
 			val nrstr = args(2)
@@ -83,36 +94,41 @@ object detect_community {
 			val lr = stol(lrstr)
 			val nr = stol(nrstr)
 
+			// for mergehf only
+			// consensus clustering + hfinder
+			// consensused network need nodesize
+			val nsize = if (args(0)=="mergehf") stol(args(3)) else Seq.empty[Int]
 			val E = (for (ln <- io.Source.stdin.getLines) yield {stol(ln)}).toSeq
 
+			CmuDet(args(0), E, lr, nr, nsize)
 
+
+		} else if (args(0) == "dir" &&
+			(Seq("cm","hf", "qfu") contains args(1))) {
+			val hfolder = args(2)
+			val E = readNet(hfolder + "/hetero.net")
+			val (lr, nr) = lrnr(hfolder + "/.meta")
+			val nsize = Seq.empty[Int]
+
+			CmuDet(args(1), E, lr, nr, nsize)
+		} else if (args(0) == "io") {
+			main(args.tail)
+		} else {
+			perr(errinfo)
+		}
+	}
+
+	def CmuDet(methodname:String, E:Seq[Seq[Int]], lr:Seq[Int], nr:Seq[Int], nsize:Seq[Int]) = {
 			val result:Seq[Seq[Int]] = 
-			args(0) match {
+			methodname match {
 				case "cm" => FastUnfolding(E, lr, nr)
 				case "hf" => Louvain(E, lr, nr)
 				case "qfu" => QFU(E, lr, nr)
+				case "mergehf" => hfinder.HFinder.Louvain_with_init_nsize(E, lr, nr, nsize)
 			}
 
 			println("------")
 			printNet(result)
-		} else if (args(0) == "mergehf" ) {
-			def stol(s:String):Seq[Int] = s.split(" ").map{_.toInt}.toSeq
-			val lrstr = args(1)
-			val nrstr = args(2)
-			val nsizestr = args(3)
-
-			val lr = stol(lrstr)
-			val nr = stol(nrstr)
-			val nsize = stol(nsizestr)
-
-			val E = (for (ln <- io.Source.stdin.getLines) yield {stol(ln)}).toSeq
-
-
-			val result:Seq[Seq[Int]] = hfinder.HFinder.Louvain_with_init_nsize(E, lr, nr, nsize)
-
-			println("------")
-			printNet(result)
-		}
 
 	}
 }

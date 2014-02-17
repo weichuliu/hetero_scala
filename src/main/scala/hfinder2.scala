@@ -432,7 +432,7 @@ class HGraph {
 					val dst_clnk = cache_cntrs(dst_cid)
 					// val cclnk = Counter(CE_cnt.items.filter{
 					// 			case (ce, cnt) => ce.contains(src_cid) || ce.contains(dst_cid)})
-					val clnk = if (src_cid == dst_cid) (src_clnk)
+					val clnk = if (src_cid == dst_cid) (src_clnk.clone)
 						else {
 							val _clnk = src_clnk + dst_clnk
 							val e = Seq(src_cid, dst_cid).sorted
@@ -453,7 +453,11 @@ class HGraph {
 					}
 
 					newcsize(dst_cid) += nsz
-					val n_LXY = calc_LXY(clnk - n_clnks_src + n_clnks_dst, newcsize)
+					// val clnk2 = clnk.clone
+					clnk.subCounter(n_clnks_src)
+					clnk.addCounter(n_clnks_dst)
+					// assert (clnk == clnk2 - n_clnks_src + n_clnks_dst)
+					val n_LXY = calc_LXY(clnk, newcsize)
 					newcsize(dst_cid) -= nsz
 					if (csize(dst_cid) == 0)
 						dlxy_emptyc = Some(n_LXY - o_LXY)
