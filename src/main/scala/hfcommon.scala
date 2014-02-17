@@ -24,7 +24,10 @@ object HFCommon {
 		}
 	}
 
-	// buffer
+	// optimization: buffer gammaln
+	// buffer gammaln for x less than buflen(default to 2048)
+	// use WrappedArray, maybe faster than Vector and List
+	// buflen can be adjusted depend on network size
 	private val buflen = 2048
 	val gammaln_buffer:Seq[Double] = {
 		val garray = new Array[Double](buflen)
@@ -39,8 +42,6 @@ object HFCommon {
 		else
 			gammaln(x)
 	}
-
-	def log2(n:Int):Double = log(n) / log(2)
 
 	def gammaln(x:Int):Double = {
 		// this gammaln only accept int >= 0
@@ -66,13 +67,15 @@ object HFCommon {
 			// 	s *= z
 			// 	s += c(i)
 			// }
-			val s = c.reduceRight{_ + _ * z} // replacement of last snippet
+			val s = c.reduceRight{_ + _ * z} // replacement of above snippet
 			val series = s/_x
 			val halfLogTwoPi = 0.91893853320467274178032973640562
 			val logGamma = (_x - 0.5)*log(_x) - _x + halfLogTwoPi + series
 			logGamma
 		}
 	}
+
+	def log2(n:Int):Double = log(n) / log(2)
 
 	def orderOfSeq(A:Seq[Int], B:Seq[Int]):Boolean = {
 		if (A.length == 1 || B.length == 1 || A(0) != B(0)) A(0) < B(0)

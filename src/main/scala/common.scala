@@ -48,8 +48,6 @@ object Common {
 		assert (nrstr.startsWith("nr = "))
 
 		return (metaToSeq(lrstr), metaToSeq(nrstr))
-
-
 	}
 
 	def _rannseq(ns:Int*) = {
@@ -156,9 +154,6 @@ object Common {
 		F_PG(pcmu, gcmu)
 	}
 }
-
-
-
 
 trait KPartiteGraph {
 	def updateE(E:Seq[Seq[Int]])
