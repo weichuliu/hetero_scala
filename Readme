@@ -1,6 +1,67 @@
+Files:
+
+	src: all source code
+		/main/scala: main programs
+			/hetcom.scala: main
+
+			/common: common functions
+			/hfcommon: common functions used in info-comp
+			/counter: a class for counting objects. Like collections.Counter in python (but different in some functions)
+
+			/newman: implementation of newman's modularity
+			/muratabi: implementation of murata's bipartite modularity
+			/muratatri: implementation of murata's tripartite modularity
+			/combiner: implementation of composite modularity
+
+			/kfinder: implementation of Xin Liu's KNetFinder
+			/ufinder: implementation of rosvall's paper
+			/hfinder2: info-comp
+
+			/merger: Louvain-C method in the thesis. Commu-Detect on each subgraph -> Consensus Clustering -> CD again.
+			(for who really care about it - we did experiment using c++ ver Bi/TriNetFinder and LPMp on subgraphs for speed. Scala version is just usable but not optimized, therefore SLOW.)
+
+		/test/scala: unit tests
+		(tested on Win7 and ubuntu. There may be some simple issue occured by EOL)
+
+	nets: uni/bi/tri-partite/heterogeneous sample networks for test.
+	project: settings for assembly(sbt plugin to compile scala into a .jar)
+
+	schedule: unimportant log file, maybe contains some hint
+	build.sbt/assembly.sbt: settings
+
+Some Comments:
+	* in sbt REPL(sbt console), most packages have FastUnfolding/Fast* algorithm to detect community from uni/k/hetero networks. Check unit tests.
+
+	* composite modularity was named combiner because it was called combined modularity.
+
+	* info compression method is also called hetero-finder, for that the k-partite ver (proposed by Xin Liu) was called BiNetFinder/TriNetFinder
+
+	* there was a python ver first. But it is in the deep deep dark.
+
+	* contact Xin Liu or Weichu Liu(typhoonsword@gmail.com) for help (PAY SERVICE. wwwwwww).
+
+Comments refer to scala:
+	* <Programming in Scala (2nd!!!!!)> by Martin Odersky is THE textbook for scala. Ask Sensei to buy one.
+
+	* Twitter's <Effective Scala> worths a read.
+
+	* http://stackoverflow.com/questions/21116100/ is useful.
+
+
+Usage:
 to compile project into a single jar file:
 
 1. download sbt from http://www.scala-sbt.org/
 2. open a command line in current path.
 3. .../hetero_scala> sbt assembly
 4. when compilation done, the jar file should be found as hetero_scala/target/scala-2.10/hetcom.jar
+
+to use the jar file:
+1. java -jar hetcom.jar ...(parameters)
+2. java -cp hetcom.jar {package}.{object} ...(parameters)
+
+to use it in REPL:
+sbt console
+
+when memory is not enough:
+sbt -mem 4096 console

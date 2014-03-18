@@ -2,6 +2,7 @@ package hetcom
 
 import common.Common._
 import common.HFCommon._
+// import hetcom.HetcomApp
 import System.err.{println => perr}
 
 // object help {
@@ -74,6 +75,10 @@ object detect_community {
 			"   hetero.net file input through stdin, used to interact with other programs",
 			"   lrstr/nrstr: string of lr and nr. Seperated by whitespace",
 			"",
+			// NO GUI. swing SUCKS
+			// "3. hetcom.jar gui",
+			// "   simple gui interface for hetcom",
+			// "",
 			"METHODNAME: choose from cm|hf|qhf",
 			"",
 			"cm for composite modularity optimization",
@@ -113,6 +118,8 @@ object detect_community {
 			CmuDet(args(1), E, lr, nr, nsize)
 		} else if (args(0) == "io") {
 			main(args.tail)
+		// } else if (args(0) == "gui") {
+			// HetcomApp.run
 		} else {
 			perr(errinfo)
 		}
